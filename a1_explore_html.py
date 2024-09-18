@@ -9,3 +9,9 @@ soup = BeautifulSoup(response.text, 'html.parser')
 
 #Example: Extracting hike titles
 hike_titles = soup.find_all('h3', class_='documentFirstHeading') for title in hike_titles: print(title.get_text())
+
+
+
+
+
+
