@@ -3,7 +3,8 @@ import numpy as np
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 import time
-
+data_dir = 'C:\Users\jorda\OneDrive\Desktop\PyCharm Community Edition 2021.2.2\EXTERNAL DATA ' \
+           'SCIENCE PROJECTS 2023\Hiking Sentiment\data\\'
 # This is a main trip report page, and after clicking on each report (trail name and date) the
 # details are underneath
 
@@ -98,11 +99,17 @@ for entry in hike_entries:
             region_info = soup_inner.find('div', class_='region')
             if region_info:
                 trailhead_region = region_info.find('span',  class_='region').text.strip()
-            sidebar = soup_inner.string('div', class_='wta-sidebar-layout__sidebar')
-            rating_section = sidebar.find('div', id='hike-rating')
-            if rating_section:
-                rating = float(rating_section.find('div', class_='current-rating').text.strip(
-                ).split()[0])
+
+            rating_div = soup_inner.find('div', class_='current-rating')
+            rating = rating_div.text.strip()
+            # now for the icon list:
+            icons_list = []
+            icons_section = soup_inner.find('ul', class_='wta-icon-list')
+            if icons_section:
+                icons = icons_section.find_all('li')
+                for icon in icons:
+                    icon_label = icon.find('span', class_='wta-icon__label').text.strip()
+                    icons_list.append(icon_label)
 
         #Now a temp df
         detail_df = pd.DataFrame({
@@ -113,7 +120,15 @@ for entry in hike_entries:
             'Road': [detail_dict['Road']],
             'Bugs': [detail_dict['Bugs']],
             'Snow': [detail_dict['Snow']],
-            'Report Text':[report_text]
+            'Report Text': [report_text],
+            'Region': [trailhead_region],
+            'Elevation': [detail_dict['Elevation Gain']],
+            'Highest Point': [detail_dict['Highest Point']],
+            'Difficulty': [detail_dict['Calculated Difficulty\n                            '
+                                       '\n\nAbout Calculated Difficulty']],
+            'Rating': [rating],
+            'Key Features': [icons_list]
+
         })
         raw_df = pd.concat([raw_df, detail_df], axis=0)
         # now in one final layer
@@ -126,5 +141,5 @@ for entry in hike_entries:
 driver.quit()
 
 
-raw_df.to_csv('hiking_reports.csv', index=False)
+raw_df.to_csv(data_dir + 'hiking_reports.csv', index=False)
 print(raw_df.shape, 'saved!')
