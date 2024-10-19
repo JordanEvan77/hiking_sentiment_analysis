@@ -75,6 +75,36 @@ for entry in hike_entries:
         report_text = soup_middle.find('div', id='tripreport-body-text').get_text(
             strip=True) if soup_middle.find('div', id='tripreport-body-text') else 'N/A'
 
+        # ONE LAYER FURTHER IN!
+        trails_hiked_link = soup_middle.find('div', class_="related-hike-links")
+        link = trails_hiked_link.find('a')
+        if link:
+            print(f'Navigating to inner details: {link.text.strip()}')
+            href = link.get('href')
+            driver.get(href)
+
+            # load time
+            time.sleep(5)
+
+            # get needed parts
+            page_source = driver.page_source
+            soup_inner = BeautifulSoup(page_source, 'html.parser')
+
+
+            stats = soup_inner.find_all('div', class_='hike-stats__stat')
+            for stat in stats:
+                detail_dict[stat.find('dt').text.strip()] = stat.find('dd').text.strip()
+
+            region_info = soup_inner.find('div', class_='region')
+            if region_info:
+                trailhead_region = region_info.find('span',  class_='region').text.strip()
+            sidebar = soup_inner.string('div', class_='wta-sidebar-layout__sidebar')
+            rating_section = sidebar.find('div', id='hike-rating')
+            if rating_section:
+                rating = float(rating_section.find('div', class_='current-rating').text.strip(
+                ).split()[0])
+
+        #Now a temp df
         detail_df = pd.DataFrame({
             'Hike Name': [hike_title],
             'Trail Report By': [trail_report_by],
@@ -94,3 +124,7 @@ for entry in hike_entries:
 
 
 driver.quit()
+
+
+raw_df.to_csv('hiking_reports.csv', index=False)
+print(raw_df.shape, 'saved!')
