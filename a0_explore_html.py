@@ -3,8 +3,7 @@ import numpy as np
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 import time
-data_dir = 'C:\Users\jorda\OneDrive\Desktop\PyCharm Community Edition 2021.2.2\EXTERNAL DATA ' \
-           'SCIENCE PROJECTS 2023\Hiking Sentiment\data\\'
+data_dir = 'data\\'
 # This is a main trip report page, and after clicking on each report (trail name and date) the
 # details are underneath
 
@@ -52,6 +51,7 @@ raw_df = pd.DataFrame({'Hike Name': [],
                        # and the actual written report
                        })
 for entry in hike_entries:
+    print('Count of hikes', len(hike_entries))
     link = entry.find('a')
     if link:
         print(f'Navigating to: {link.text.strip()}')
