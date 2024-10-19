@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 from selenium import webdriver
 from selenium.webdriver.common.by import By
+import time
 
 # This is a main trip report page, and after clicking on each report (trail name and date) the
 # details are underneath
@@ -33,29 +34,63 @@ driver.implicitly_wait(10)
 page_source = driver.page_source
 from bs4 import BeautifulSoup
 
-# Parse the HTML content with BeautifulSoup
-soup = BeautifulSoup(page_source, 'html.parser')
+# parser soup
+soup_outer = BeautifulSoup(page_source, 'html.parser')
 
-# Extract hike titles and dates
-hike_entries = soup.find_all('h3', class_='listitem-title')
+# titles
+hike_entries = soup_outer.find_all('h3', class_='listitem-title')
 
-hike_list = [entry.text.strip() for entry in hike_entries]
-for hike in hike_list:
-    print(hike)
+# now use them as links
+raw_df = pd.DataFrame({'Hike Name': [],
+                       'Trail Report By': [],
+                       'Type of Hike': [],
+                       'Trail Conditions': [],
+                       'Road': [],
+                       'Bugs': [],
+                       'Snow': []
+                       # and the actual written report
+                       })
+for entry in hike_entries:
+    link = entry.find('a')
+    if link:
+        print(f'Navigating to: {link.text.strip()}')
+        href = link.get('href')
+        driver.get(href)
 
-#------
-all_elements = driver.find_elements(By.CSS_SELECTOR, '*')
+        # load time
+        time.sleep(5)
 
+        # get needed parts
+        page_source = driver.page_source
+        soup_middle = BeautifulSoup(page_source, 'html.parser')
 
-for element in all_elements[:1]:
-    print('tag', element.tag_name, 'CLass', element.get_attribute('class'), 'TEXT', element.text)
+        # Extract the specific details
+        details = soup_middle.find_all('div', class_='trip-condition')
+        detail_dict = {detail.find('h4').text.strip(): detail.find('span').text.strip()
+            for detail in details}
+        hike_title = soup_middle.find('span', id='breadcrumbs-current').text.strip() if \
+            soup_middle.find('span', id='breadcrumbs-current') else 'N/A'
+        trail_report_by = soup_middle.find('span', class_='wta-icon-headline__text').text.strip() \
+            if soup_middle.find('span', class_='wta-icon-headline__text') else 'N/A'
+        report_text = soup_middle.find('div', id='tripreport-body-text').get_text(
+            strip=True) if soup_middle.find('div', id='tripreport-body-text') else 'N/A'
 
+        detail_df = pd.DataFrame({
+            'Hike Name': [hike_title],
+            'Trail Report By': [trail_report_by],
+            'Type of Hike': [detail_dict['Type of Hike']],
+            'Trail Conditions': [detail_dict['Trail Conditions']],
+            'Road': [detail_dict['Road']],
+            'Bugs': [detail_dict['Bugs']],
+            'Snow': [detail_dict['Snow']],
+            'Report Text':[report_text]
+        })
+        raw_df = pd.concat([raw_df, detail_df], axis=0)
+        # now in one final layer
+        
+        #back out
+        driver.back()
+        driver.implicitly_wait(10)
 
-
-hike_titles = driver.find_elements(By.CSS_SELECTOR, 'div.listitem-title a')
-
-
-for title in hike_titles:
-    print(title.text)
 
 driver.quit()
