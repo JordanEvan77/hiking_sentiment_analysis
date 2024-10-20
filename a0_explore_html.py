@@ -54,6 +54,7 @@ raw_df = pd.DataFrame({'Hike Name': [],
                 'Date': []
                        })
 i = 0
+start_time = time.time()
 while True:
     page_source = driver.page_source
     soup_outer = BeautifulSoup(page_source, 'html.parser')
@@ -64,7 +65,7 @@ while True:
         link = entry.find('a')
         if link:
             print(f'Navigating to: {link.text.strip()}')
-            date = link.text.strip().split('-')[1] # get date
+            date = link.text.strip().split('—')[1] # get date
             href = link.get('href')
             driver.get(href)
 
@@ -160,6 +161,7 @@ while True:
     if next_link:
         driver.get(next_link)
         time.sleep(5)
+        print(f'Next loop begins with {i+1} and time spent {(time.time()-start_time)/60}')
     else:
         print('clicked through all')
         break
