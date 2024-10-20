@@ -37,8 +37,6 @@ from bs4 import BeautifulSoup
 # parser soup
 soup_outer = BeautifulSoup(page_source, 'html.parser')
 
-# titles
-hike_entries = soup_outer.find_all('h3', class_='listitem-title')
 
 # now use them as links
 raw_df = pd.DataFrame({'Hike Name': [],
@@ -53,6 +51,7 @@ raw_df = pd.DataFrame({'Hike Name': [],
 
 while True:
     i = 0
+    hike_entries = soup_outer.find_all('h3', class_='listitem-title') # find next 100
     for entry in hike_entries:
         i +=1
         print('Count of hikes', i, '/', len(hike_entries))
@@ -83,6 +82,8 @@ while True:
             # ONE LAYER FURTHER IN!
             trails_hiked_link = soup_middle.find('div', class_="related-hike-links")
             link = trails_hiked_link.find('a')
+            if link == None:
+                continue # empty link, next dataset?
             if link:
                 #print(f'Navigating to inner details: {link.text.strip()}')
                 href = link.get('href')
@@ -97,10 +98,15 @@ while True:
 
 
                 stats = soup_inner.find_all('div', class_='hike-stats__stat')
+                detail_dict['Elevation Gain'] = 'N/A'
+                detail_dict['Highest Point'] = 'N/A'
+                detail_dict['Calculated Difficulty\n                            \n\nAbout Calculated Difficulty']  = 'N/A'
                 for stat in stats:
                     detail_dict[stat.find('dt').text.strip()] = stat.find('dd').text.strip()
 
                 region_info = soup_inner.find('div', class_='region')
+                rating = 'N/A'
+                trailhead_region = 'N/A'
                 if region_info:
                     trailhead_region = region_info.find('span',  class_='region').text.strip()
 
@@ -141,17 +147,20 @@ while True:
             driver.back()
             driver.implicitly_wait(10)
     # Check if there is a "Next 100 items" button
-    next_button = soup_outer.find('a', text='Next 100 items')
-    if next_button:
-        next_button_link = next_button['href']
-        driver.get(next_button_link)
+    next_link = soup_outer.find('li', class_='next').find('a')['href'] #<span class="label">Next
+    # 100 items</span>
+    if next_link:
+        driver.get(next_link)
         time.sleep(5)
     else:
         print('clicked through all')
         break
 
     driver.quit()
+    raw_df.to_csv(r'C:\Users\jorda\OneDrive\Desktop\PyCharm Community Edition '
+                  r'2021.2.2\EXTERNAL DATA SCIENCE PROJECTS 2023\Hiking Sentiment\data\hiking_reports.csv',
+                  index=False)  # TODO: MOVE THIS BACK
+    # OUTSIDE LOOP AND CREATE CONTINGENCIES FOR WHEN ELEVATION AND OTHER STATS AREN"T
+    # PRESENT
 
-
-raw_df.to_csv(data_dir + 'hiking_reports.csv', index=False)
 print(raw_df.shape, 'saved!')
