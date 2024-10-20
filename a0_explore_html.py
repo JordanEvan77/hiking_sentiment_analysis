@@ -3,6 +3,8 @@ import numpy as np
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 import time
+from bs4 import BeautifulSoup
+
 data_dir = 'data\\'
 # This is a main trip report page, and after clicking on each report (trail name and date) the
 # details are underneath
@@ -31,26 +33,30 @@ url = 'https://www.wta.org/go-outside/trip-reports'
 driver.get(url)
 driver.implicitly_wait(10)
 #-----------
-page_source = driver.page_source
-from bs4 import BeautifulSoup
 
-# parser soup
-soup_outer = BeautifulSoup(page_source, 'html.parser')
 
 
 # now use them as links
 raw_df = pd.DataFrame({'Hike Name': [],
-                       'Trail Report By': [],
-                       'Type of Hike': [],
-                       'Trail Conditions': [],
-                       'Road': [],
-                       'Bugs': [],
-                       'Snow': []
-                       # and the actual written report
+                'Trail Report By': [],
+                'Type of Hike': [],
+                'Trail Conditions': [],
+                'Road': [],
+                'Bugs': [],
+                'Snow': [],
+                'Report Text': [],
+                'Region': [],
+                'Elevation': [],
+                'Highest Point': [],
+                'Difficulty': [],
+                'Rating': [],
+                'Key Features': [],
+                'Date': []
                        })
-
+i = 0
 while True:
-    i = 0
+    page_source = driver.page_source
+    soup_outer = BeautifulSoup(page_source, 'html.parser')
     hike_entries = soup_outer.find_all('h3', class_='listitem-title') # find next 100
     for entry in hike_entries:
         i +=1
@@ -58,6 +64,7 @@ while True:
         link = entry.find('a')
         if link:
             print(f'Navigating to: {link.text.strip()}')
+            date = link.text.strip().split('-')[1] # get date
             href = link.get('href')
             driver.get(href)
 
@@ -137,7 +144,8 @@ while True:
                 'Difficulty': [detail_dict['Calculated Difficulty\n                            '
                                            '\n\nAbout Calculated Difficulty']],
                 'Rating': [rating],
-                'Key Features': [icons_list]
+                'Key Features': [icons_list],
+                'Date': date
 
             })
             raw_df = pd.concat([raw_df, detail_df], axis=0)
@@ -156,11 +164,8 @@ while True:
         print('clicked through all')
         break
 
-    driver.quit()
-    raw_df.to_csv(r'C:\Users\jorda\OneDrive\Desktop\PyCharm Community Edition '
-                  r'2021.2.2\EXTERNAL DATA SCIENCE PROJECTS 2023\Hiking Sentiment\data\hiking_reports.csv',
-                  index=False)  # TODO: MOVE THIS BACK
-    # OUTSIDE LOOP AND CREATE CONTINGENCIES FOR WHEN ELEVATION AND OTHER STATS AREN"T
-    # PRESENT
-
+driver.quit()
+raw_df.to_csv(r'C:\Users\jorda\OneDrive\Desktop\PyCharm Community Edition '
+              r'2021.2.2\EXTERNAL DATA SCIENCE PROJECTS 2023\Hiking Sentiment\data\hiking_reports.csv',
+              index=False)
 print(raw_df.shape, 'saved!')
