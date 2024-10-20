@@ -165,6 +165,9 @@ while True:
     else:
         print('clicked through all')
         break
+    raw_df.to_csv(r'C:\Users\jorda\OneDrive\Desktop\PyCharm Community Edition '
+                  r'2021.2.2\EXTERNAL DATA SCIENCE PROJECTS 2023\Hiking Sentiment\data\hiking_reports.csv',
+                  index=False)
 
 driver.quit()
 raw_df.to_csv(r'C:\Users\jorda\OneDrive\Desktop\PyCharm Community Edition '
