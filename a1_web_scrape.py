@@ -38,8 +38,13 @@ while True:
             href = link.get('href')
             driver.get(href)
             # load time
-            WebDriverWait(driver, 10).until(
-                EC.presence_of_element_located((By.ID, 'tripreport-body-text')))
+            try:
+                WebDriverWait(driver, 5).until(
+                    EC.presence_of_element_located((By.ID, 'tripreport-body-text')))
+            except TimeoutException:
+                dead_links += 1
+                print(f'*** DEAD LINK MOVE ON, COUNT: {dead_links}')
+                continue
             # get needed parts
             page_source = driver.page_source
             soup_middle = BeautifulSoup(page_source, 'html.parser')
