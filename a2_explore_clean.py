@@ -82,4 +82,33 @@ for col in num_cols:
         'Outliers (%)': [outliers_pct]
     })
     df_num = pd.concat([df_num, new_row], ignore_index=True)
-# null count isn't too severe, will try imputation and dropping outliers
+# null count isn't too severe, will try imputation and dropping outliers completely
+
+
+############################################
+########### CATEGORICAL CLEANING ###########
+############################################
+df2 = df_cat
+
+
+
+
+
+
+############################################
+########### NUMERIC CLEANING ###########
+############################################
+df_3 = df_num
+
+
+
+############################################
+########### DONE, Save out ###########
+############################################
+
+
+#show alternate pipeline cleaning, as alternative
+
+
+final_df = []
+final_df.to_csv('data\model\model_data1.csv', index=False)
