@@ -20,7 +20,8 @@ cat_cols = ['Key Features', 'Difficulty', 'Report Text', 'Region', 'Road', 'Bugs
             'Type of Hike', 'Trail Conditions']
 id_cols = ['Hike Name', 'Trail Report By']
 num_cols = ['Date', 'Rating', 'Highest Point', 'Elevation'] # date, float, int, int
-
+# Note: Rating is on the hike overall, which is separate from trail reports, so each report doesn't
+# have an attached rating, hence the need for sentiment analysis
 temp = df.describe()
 
 #check categorical:
@@ -90,6 +91,7 @@ for col in num_cols:
 ############################################
 df2 = df_cat
 
+# TODO: Drop nulls, or do KNN imputation
 
 
 
@@ -111,4 +113,4 @@ df_3 = df_num
 
 
 final_df = []
-final_df.to_csv('data\model\model_data1.csv', index=False)
+final_df.to_csv('data\model_ready\model_data1.csv', index=False)
