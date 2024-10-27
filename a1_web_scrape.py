@@ -132,11 +132,11 @@ while True:
         break
     if i % 1000 == 0:
         raw_df.to_csv(
-            r'C:\Users\jorda\OneDrive\Desktop\PyCharm Community Edition 2021.2.2\EXTERNAL DATA SCIENCE PROJECTS 2023\Hiking Sentiment\data\hiking_reports.csv',
+            data_dir + 'raw\hiking_reports.csv',
             index=False)
 
 raw_df.to_csv(
-    r'C:\Users\jorda\OneDrive\Desktop\PyCharm Community Edition 2021.2.2\EXTERNAL DATA SCIENCE PROJECTS 2023\Hiking Sentiment\data\hiking_reports.csv',
+    data_dir + 'raw\hiking_reports.csv',
     index=False)
 driver.quit()
 print(raw_df.shape, 'saved!')
