@@ -8,7 +8,8 @@ from selenium.common.exceptions import TimeoutException
 import time
 from bs4 import BeautifulSoup
 
-data_dir = 'data\\'
+data_dir = r'C:\Users\jorda\OneDrive\Desktop\PyCharm Community Edition 2021.2.2\EXTERNAL DATA ' \
+           r'SCIENCE PROJECTS 2023\Hiking Sentiment\data\\'
 
 driver = webdriver.Chrome()
 url = 'https://www.wta.org/go-outside/trip-reports'

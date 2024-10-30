@@ -85,11 +85,55 @@ for col in num_cols:
     df_num = pd.concat([df_num, new_row], ignore_index=True)
 # null count isn't too severe, will try imputation and dropping outliers completely
 
+############################################
+########### CROSS OVER VISUALS##############
+############################################
+cat_cols = ['Key Features', 'Difficulty', 'Report Text', 'Region', 'Road', 'Bugs', 'Snow',
+            'Type of Hike', 'Trail Conditions']
+id_cols = ['Hike Name', 'Trail Report By']
+num_cols = ['Date', 'Rating', 'Highest Point', 'Elevation']
+
+
+# scatter plot: Rating and Elevation
+plt.figure(figsize=(10, 6))
+sns.scatterplot(data=df, x='Rating', y='Elevation')
+plt.title('Scatter Plot: Rating and Elevation')
+plt.show()
+
+# scatter plot: Rating and Difficulty
+plt.figure(figsize=(10, 6))
+sns.scatterplot(data=df, x='Rating', y='Difficulty')
+plt.title('Scatter Plot: Rating and Difficulty')
+plt.show()
+
+# scatter plot: Date and Difficulty
+plt.figure(figsize=(10, 6))
+sns.scatterplot(data=df, x='Date', y='Difficulty')
+plt.title('Scatter Plot: Date and Difficulty')
+plt.show()
+
+#Bar Graph: Highest point avg per Difficulty
+plt.figure(figsize=(10, 6))
+sns.barplot(data=df, x='Difficulty', y='Highest Point', estimator=pd.Series.mean)
+plt.title('Bar Graph: Highest Point Avg per Difficulty')
+plt.show()
+
+# Correlation heat map
+corr = df[num_cols].corr()
+plt.figure(figsize=(10, 8))
+sns.heatmap(corr, annot=True, cmap='coolwarm', linewidths=.5)
+plt.title('Correlation Heatmap of Numerical Columns')
+plt.show()
 
 ############################################
 ########### CATEGORICAL CLEANING ###########
 ############################################
-df2 = df_cat
+df2 = df_cat.copy()
+
+#visualize histogram:
+
+
+
 
 # TODO: Drop nulls, or do KNN imputation
 
