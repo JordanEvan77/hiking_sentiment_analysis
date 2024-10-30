@@ -3,8 +3,8 @@ import numpy as np
 import sklearn
 import matplotlib.pyplot as plt
 import seaborn as sns
-
-data_dir = 'data\\raw\\'
+from Scratch.loggers import data_dir
+import ast
 
 df_raw = pd.read_csv(data_dir + 'hiking_reports_23.csv')
 df = df_raw.copy() # not too big to hold a copy in memory
@@ -88,6 +88,7 @@ for col in num_cols:
 ############################################
 ########### CROSS OVER VISUALS##############
 ############################################
+df_viz = df.copy()
 cat_cols = ['Key Features', 'Difficulty', 'Report Text', 'Region', 'Road', 'Bugs', 'Snow',
             'Type of Hike', 'Trail Conditions']
 id_cols = ['Hike Name', 'Trail Report By']
@@ -96,48 +97,107 @@ num_cols = ['Date', 'Rating', 'Highest Point', 'Elevation']
 
 # scatter plot: Rating and Elevation
 plt.figure(figsize=(10, 6))
-sns.scatterplot(data=df, x='Rating', y='Elevation')
+sns.scatterplot(data=df_viz, x='Rating', y='Elevation')
 plt.title('Scatter Plot: Rating and Elevation')
-plt.show()
+plt.show() # gaps around 1 and 2 star ratings as anticipated, with highest hardest hikes
 
 # scatter plot: Rating and Difficulty
 plt.figure(figsize=(10, 6))
-sns.scatterplot(data=df, x='Rating', y='Difficulty')
+sns.scatterplot(data=df_viz, x='Rating', y='Difficulty')
 plt.title('Scatter Plot: Rating and Difficulty')
-plt.show()
+plt.show() # similar to above, nothing surprising
 
 # scatter plot: Date and Difficulty
 plt.figure(figsize=(10, 6))
-sns.scatterplot(data=df, x='Date', y='Difficulty')
+sns.scatterplot(data=df_viz, x='Date', y='Difficulty')
 plt.title('Scatter Plot: Date and Difficulty')
-plt.show()
+plt.show() # this should be done as count of per date
+
+# line plot of count of difficult:
+df_viz['Month'] = df_viz['Date'].dt.month
+temp_viz = df_viz.groupby(['Month', 'Difficulty']).agg({'Difficulty':'count'}).rename(columns={
+    'Difficulty':'Count'})
+temp_viz.reset_index(inplace=True, drop=False)
+
+plt.figure(figsize=(12, 6))
+sns.lineplot(data=temp_viz, x='Month', y='Count', hue='Difficulty', marker='o')
+plt.title('Count of Hikes per Difficulty Over Time')
+plt.xticks(rotation=45)
+plt.tight_layout()
+plt.show() # most difficult hiking is done in the summer, makes sense
+
 
 #Bar Graph: Highest point avg per Difficulty
+df_viz['Highest Point'] = pd.to_numeric(df_viz['Highest Point'], errors='coerce')
+grouped_df = df_viz.groupby('Difficulty')['Highest Point'].mean().reset_index()
 plt.figure(figsize=(10, 6))
-sns.barplot(data=df, x='Difficulty', y='Highest Point', estimator=pd.Series.mean)
+sns.barplot(data=grouped_df, x='Difficulty', y='Highest Point')
 plt.title('Bar Graph: Highest Point Avg per Difficulty')
-plt.show()
+plt.show() # hard does have highest point
 
 # Correlation heat map
-corr = df[num_cols].corr()
+corr = df_viz[num_cols].corr()
 plt.figure(figsize=(10, 8))
 sns.heatmap(corr, annot=True, cmap='coolwarm', linewidths=.5)
 plt.title('Correlation Heatmap of Numerical Columns')
-plt.show()
+plt.show() # rating and elevation, along with rate and highest point of course
+
 
 ############################################
 ########### CATEGORICAL CLEANING ###########
 ############################################
-df2 = df_cat.copy()
-
-#visualize histogram:
+df_2 = df.copy() # next step of full cleaning
 
 
+#visualize histogram: TODO: Fix presentation, break these out 1 by 1
+for i in cat_cols:
+    plt.figure(figsize=(10, 6))
+    sns.histplot(data=df_viz, x=i, discrete=True)
+    plt.title(f'Histogram of {col}')
+    plt.xticks(rotation=45)
+    plt.show()
+
+
+#'Key Features',
+# this one is one of the hardest to clean, I will need to parse it and hope to OHE:
+key_feat_list = list(df_2['Key Features'].unique())
+key_feat_list = [ast.literal_eval(list) for list in key_feat_list] # handle quoted lists
+key_feat_list = [item for sublist in key_feat_list for item in sublist]
+
+unique_items = list(set(key_feat_list)) # perfect, only 19 items
+# then if the specific row entry has this in it, create 0 or 1
+for new_col in unique_items:
+    df_2[f'{new_col}_dummy'] = df_2['Key Features'].apply(lambda x: 1 if new_col in x else 0)
+# this OHE type is preferred over LE, and will provide better performance
+
+
+# 'Difficulty',
+
+
+# 'Report Text',
+
+
+# 'Region',
+
+
+# 'Road',
+
+
+#'Bugs',
+
+
+# 'Snow',
+
+
+# 'Type of Hike',
+
+
+# 'Trail Conditions']
 
 
 # TODO: Drop nulls, or do KNN imputation
-
-
+df_final = []
+df_knn = []
 
 
 
