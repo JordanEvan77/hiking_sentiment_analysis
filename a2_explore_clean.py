@@ -3,6 +3,7 @@ import numpy as np
 import sklearn
 import missingno as msno
 import matplotlib.pyplot as plt
+from sklearn.impute import KNNImputer
 import seaborn as sns
 from Scratch.loggers import data_dir
 import ast
@@ -229,7 +230,7 @@ plt.show()
 plt.figure(figsize=(10, 6))
 msno.matrix(df_viz[cat_cols])
 plt.title('Missing Value Matrix')
-plt.show()
+plt.show() # not a lot of paterns as to when the data is missing
 
 
 #'Key Features',
@@ -245,33 +246,68 @@ for new_col in unique_items:
 # this OHE type is preferred over LE, and will provide better performance
 
 
-# 'Difficulty',
-
+# 'Difficulty', Encoding:
+diff_map = {'Easy':0, 'Easy/Moderate':1, 'Moderate':2, 'Moderate/Hard':3, 'Hard':4}
+df_2['Difficulty'] = df_2['Difficulty'].map(diff_map) # this should be the only cleaning, beyond null cleaning
+# needed
 
 # 'Report Text',
+# this is the crucial part of the process where I get the signal, using sentiment analysis
+# TODO: Create sentiment analysis in other script and bring it in here
 
 
 # 'Region',
-
+# TODO: The region is made up of two parts, split it with string split, and maybe OHE the first
+#  portion? Then consider Label Encoding the second (too much variety with 60+?) and see later if
+#  the feature is important enough on the second region type (definitely keep the first,
+#  there should be less)
 
 # 'Road',
-
+# TODO: Typical OHE
 
 #'Bugs',
-
+# TODO: Typical OHE
 
 # 'Snow',
-
+# TODO: Typical OHE
 
 # 'Type of Hike',
-
+# TODO: Typical OHE
 
 # 'Trail Conditions']
+df['Trail Conditions'].value_counts()
+# This also has some segments to it. So for items with ':' grab the first portion as a column,
+# and save the second as another column,
+# TODO: should be able to OHE new first column, and maybe label encode rest? Depends on variety,
+# may just dro pit?
 
 
-# TODO: Drop nulls, or do KNN imputation
-df_final = []
-df_knn = []
+# Check what the count of nulls is now that encoding is done and we can potentially impute:
+cat_nulls = df_2[cat_cols].isna().sum()
+# Key Features           0
+# Difficulty          1013
+# Report Text          180
+# Region               149
+# Road                   0
+# Bugs                   0
+# Snow                   0
+# Type of Hike           0
+# Trail Conditions       0
+
+#So difficulty is the one with the most nulls, but still less than 5% of the rows are null.
+# I could just drop the null values, but doing something like KNN to help fill the null values
+# may be worth a try. Especially since the elevation, max hieght and other features correlate
+# well with difficulty
+
+#The report text is our signal and has very few nulls, and the region is also a value that
+# contextually doesn't make a lot of sense to impute, and also has very few nulls.
+
+#drop nulls before I do imputing
+df_2 = df_2[~(df_2['Report Text'].isnull()) & ~(df_2['Region'].isnull())]
+
+#impute after encoding!
+impute = KNNImputer(n_neighbors=3)
+df_imputed = pd.DataFrame(impute.fit_transform(df_2), columns=['Difficulty'])
 
 
 
