@@ -37,7 +37,11 @@ while True:
             print(f'Navigating to: {link.text.strip()}')
             date = link.text.strip().split('—')[1]  # get date
             href = link.get('href')
-            driver.get(href)
+            try:
+                driver.get(href)
+            except:
+                print('Bad get, skip')
+                continue
             # load time
             try:
                 WebDriverWait(driver, 5).until(
@@ -131,7 +135,7 @@ while True:
     else:
         print('clicked through all')
         break
-    if i % 1000 == 0:
+    if i % 5000 == 0:
         raw_df.to_csv(
             data_dir + 'raw\hiking_reports.csv',
             index=False)
