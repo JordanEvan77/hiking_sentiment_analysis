@@ -88,6 +88,7 @@ while True:
                 detail_dict['Highest Point'] = 'N/A'
                 detail_dict[
                     'Calculated Difficulty\n                            \n\nAbout Calculated Difficulty'] = 'N/A'
+                detail_dict['Trail Conditions'] = 'N/A'
                 for stat in stats:
                     detail_dict[stat.find('dt').text.strip()] = stat.find('dd').text.strip()
                 region_info = soup_inner.find('div', class_='region')
