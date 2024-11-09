@@ -12,7 +12,7 @@ plt.ion()
 
 #Read in the data
 
-df_raw = pd.read_csv(data_dir + 'hiking_reports_23.csv')
+df_raw = pd.read_csv(data_dir + 'hiking_reports_36.csv')
 df = df_raw.copy() # not too big to hold a copy in memory
 
 #####################################
@@ -259,33 +259,49 @@ df_2['Difficulty'] = df_2['Difficulty'].map(diff_map) # this should be the only 
 
 # 'Region',
 df_2['Region'].value_counts()
-# TODO: The region is made up of two parts, split it with string split, and maybe OHE the first
+# The region is made up of two parts, split it with string split, and maybe OHE the first
 #  portion? Then consider Label Encoding the second (too much variety with 60+?) and see later if
 #  the feature is important enough on the second region type (definitely keep the first,
 #  there should be less)
+def split_region(i):
+    if '>' in str(i):
+        return str(i).split(' > ')
+    else:
+        return [str(i), None]
 
-# 'Road',
-# TODO: Typical OHE
+df_2[['large_region', 'small_region']] = df_2['Region'].apply(split_region).apply(pd.Series)
+df_2['large_region'].value_counts()
+df_2['small_region'].value_counts() # too many values for OHE and LE feels wrong, drop for now
 
-#'Bugs',
-# TODO: Typical OHE
-
-# 'Snow',
-# TODO: Typical OHE
-
-# 'Type of Hike',
-# TODO: Typical OHE
+df_2 = df_2[[i for i in df_2.columns if i not in ['small_region', 'Region']]]
 
 # 'Trail Conditions']
-df['Trail Conditions'].value_counts()
+df_2['Trail Conditions'].value_counts()
 # This also has some segments to it. So for items with ':' grab the first portion as a column,
 # and save the second as another column,
 # TODO: should be able to OHE new first column, and maybe label encode rest? Depends on variety,
 # may just dro pit?
+def split_condition(i):
+    if ':' in str(i):
+        return str(i).split(':')
+    else:
+        return [str(i), None]
 
+df_2[['general_trail_condition', 'detail_trail_condition']] = df_2['Trail Conditions'].apply(
+    split_condition).apply(pd.Series)
+
+print(df_2['general_trail_condition'].value_counts()) # definitely OHE
+print(df_2['detail_trail_condition'].value_counts()) # could take each sub part of the text and
+# OHE it as well! But the general should be good for now, so OHE it and drop rest for now
+df_2 = df_2[[i for i in df_2.columns if i not in ['Trail Conditions', 'detail_trail_condition']]]
+
+# 'Road',#'Bugs', 'Snow', 'Type of Hike',
+# TODO: Typical OHE
+df_2 = pd.get_dummies(df_2, columns=['Road', 'Bugs', 'Snow', 'Type of Hike', 'large_region',
+                                     'general_trail_condition'])
 
 # Check what the count of nulls is now that encoding is done and we can potentially impute:
-cat_nulls = df_2[cat_cols].isna().sum()
+cat_nulls = df_2[[i for i in df_2.columns if i not in id_cols+num_cols]].isna().sum()
 # Key Features           0
 # Difficulty          1013
 # Report Text          180
