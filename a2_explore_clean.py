@@ -263,6 +263,7 @@ df_2['Region'].value_counts()
 #  portion? Then consider Label Encoding the second (too much variety with 60+?) and see later if
 #  the feature is important enough on the second region type (definitely keep the first,
 #  there should be less)
+df_2 = df_2[~(df_2['Region'].isnull())] # due to region not being imputable
 def split_region(i):
     if '>' in str(i):
         return str(i).split(' > ')
@@ -298,19 +299,14 @@ df_2 = df_2[[i for i in df_2.columns if i not in ['Trail Conditions', 'detail_tr
 # 'Road',#'Bugs', 'Snow', 'Type of Hike',
 # TODO: Typical OHE
 df_2 = pd.get_dummies(df_2, columns=['Road', 'Bugs', 'Snow', 'Type of Hike', 'large_region',
-                                     'general_trail_condition'])
+                                     'general_trail_condition', 'Key Features'])
 
 # Check what the count of nulls is now that encoding is done and we can potentially impute:
 cat_nulls = df_2[[i for i in df_2.columns if i not in id_cols+num_cols]].isna().sum()
 # Key Features           0
-# Difficulty          1013
-# Report Text          180
-# Region               149
-# Road                   0
-# Bugs                   0
-# Snow                   0
-# Type of Hike           0
-# Trail Conditions       0
+# Report Text                                                           201
+# Difficulty                                                           1054
+
 
 #So difficulty is the one with the most nulls, but still less than 5% of the rows are null.
 # I could just drop the null values, but doing something like KNN to help fill the null values
@@ -321,9 +317,10 @@ cat_nulls = df_2[[i for i in df_2.columns if i not in id_cols+num_cols]].isna().
 # contextually doesn't make a lot of sense to impute, and also has very few nulls.
 
 #drop nulls before I do imputing
-df_2 = df_2[~(df_2['Report Text'].isnull()) & ~(df_2['Region'].isnull())]
+df_2 = df_2[~(df_2['Report Text'].isnull())]
 
 #impute after encoding!
+#TODO: 'Hike Name' and 'Trail Report By' as index??? sentiment analysis and this should run
 impute = KNNImputer(n_neighbors=3)
 df_imputed = pd.DataFrame(impute.fit_transform(df_2), columns=['Difficulty'])
 
