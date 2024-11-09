@@ -100,7 +100,7 @@ cat_cols = ['Key Features', 'Difficulty', 'Report Text', 'Region', 'Road', 'Bugs
 id_cols = ['Hike Name', 'Trail Report By']
 num_cols = ['Date', 'Rating', 'Highest Point', 'Elevation']
 
-viz_show = 'Yes'
+viz_show = 'No'
 if viz_show != 'No':
     # scatter plot: Rating and Elevation
     plt.figure(figsize=(10, 6))
@@ -160,7 +160,7 @@ if viz_show != 'No':
     sns.barplot(data=df_viz_g, y='count', x='Key Features')
     plt.title(f'bar of Key Features')
     plt.xticks(rotation=45)
-    plt.show()
+    plt.show() # clusters of common phrase sets, will need cleaning as expected
 
     df_viz_g = df_viz.groupby('Difficulty').size().reset_index(name='count')
 
@@ -168,7 +168,7 @@ if viz_show != 'No':
     sns.barplot(data=df_viz_g, y='count', x='Difficulty')
     plt.title(f'bar of Difficulty')
     plt.xticks(rotation=45)
-    plt.show()
+    plt.show() # highest count is hard hikes, which shows desire for challenge vs rating?
 
     df_viz_g = df_viz.groupby('Report Text').size().reset_index(name='count')
 
@@ -176,7 +176,7 @@ if viz_show != 'No':
     sns.barplot(data=df_viz_g, y='count', x='Report Text')
     plt.title(f'bar of Report Text')
     plt.xticks(rotation=45)
-    plt.show()
+    plt.show() # lots of unique values as expected, will need cleaning
 
     df_viz_g = df_viz.groupby('Region').size().reset_index(name='count')
 
@@ -184,7 +184,7 @@ if viz_show != 'No':
     sns.barplot(data=df_viz_g, y='count', x='Region')
     plt.title(f'bar of Region')
     plt.xticks(rotation=45)
-    plt.show()
+    plt.show() # lots of reports in snoqualmie and cle elum
 
     df_viz_g = df_viz.groupby('Road').size().reset_index(name='count')
 
@@ -192,7 +192,7 @@ if viz_show != 'No':
     sns.barplot(data=df_viz_g, y ='count', x='Road')
     plt.title(f'bar of Road')
     plt.xticks(rotation=45)
-    plt.show()
+    plt.show() # open for all vehicles is overwhelming majority, unexepected
 
     df_viz_g = df_viz.groupby('Bugs').size().reset_index(name='count')
 
@@ -200,7 +200,7 @@ if viz_show != 'No':
     sns.barplot(data=df_viz_g, y='count', x='Bugs')
     plt.title(f'bar of Road')
     plt.xticks(rotation=45)
-    plt.show()
+    plt.show() # bugs are less of an  issue than anticipated, definitely has seasonal effect
 
     df_viz_g = df_viz.groupby('Snow').size().reset_index(name='count')
 
@@ -208,7 +208,7 @@ if viz_show != 'No':
     sns.barplot(data=df_viz_g, y='count', x='Snow')
     plt.title(f'bar of Snow')
     plt.xticks(rotation=45)
-    plt.show()
+    plt.show() # snow free is dominant as expected
 
     df_viz_g = df_viz.groupby('Type of Hike').size().reset_index(name='count')
 
@@ -216,7 +216,7 @@ if viz_show != 'No':
     sns.barplot(data=df_viz_g, y='count', x='Type of Hike')
     plt.title(f'bar of Type of Hike')
     plt.xticks(rotation=45)
-    plt.show()
+    plt.show() # a lot less over night and back packing reports than expected
 
     df_viz_g = df_viz.groupby('Trail Conditions').size().reset_index(name='count')
 
@@ -224,7 +224,7 @@ if viz_show != 'No':
     sns.barplot(data=df_viz_g, y='count', x='Trail Conditions')
     plt.title(f'bar of Trail Conditions')
     plt.xticks(rotation=45)
-    plt.show()
+    plt.show() # trail in good condition is overwhelming majority
 
     #nbow check for Null values
     plt.figure(figsize=(10, 6))
