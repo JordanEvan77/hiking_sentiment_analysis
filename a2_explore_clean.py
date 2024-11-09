@@ -100,141 +100,142 @@ cat_cols = ['Key Features', 'Difficulty', 'Report Text', 'Region', 'Road', 'Bugs
 id_cols = ['Hike Name', 'Trail Report By']
 num_cols = ['Date', 'Rating', 'Highest Point', 'Elevation']
 
+viz_show = 'Yes'
+if viz_show != 'No':
+    # scatter plot: Rating and Elevation
+    plt.figure(figsize=(10, 6))
+    sns.scatterplot(data=df_viz, x='Rating', y='Elevation')
+    plt.title('Scatter Plot: Rating and Elevation')
+    plt.show() # gaps around 1 and 2 star ratings as anticipated, with highest hardest hikes
 
-# scatter plot: Rating and Elevation
-plt.figure(figsize=(10, 6))
-sns.scatterplot(data=df_viz, x='Rating', y='Elevation')
-plt.title('Scatter Plot: Rating and Elevation')
-#plt.show() # gaps around 1 and 2 star ratings as anticipated, with highest hardest hikes
+    # scatter plot: Rating and Difficulty
+    plt.figure(figsize=(10, 6))
+    sns.scatterplot(data=df_viz, x='Rating', y='Difficulty')
+    plt.title('Scatter Plot: Rating and Difficulty')
+    plt.show() # similar to above, nothing surprising
 
-# scatter plot: Rating and Difficulty
-plt.figure(figsize=(10, 6))
-sns.scatterplot(data=df_viz, x='Rating', y='Difficulty')
-plt.title('Scatter Plot: Rating and Difficulty')
-#plt.show() # similar to above, nothing surprising
+    # scatter plot: Date and Difficulty
+    plt.figure(figsize=(10, 6))
+    sns.scatterplot(data=df_viz, x='Date', y='Difficulty')
+    plt.title('Scatter Plot: Date and Difficulty')
+    plt.show() # this should be done as count of per date
 
-# scatter plot: Date and Difficulty
-plt.figure(figsize=(10, 6))
-sns.scatterplot(data=df_viz, x='Date', y='Difficulty')
-plt.title('Scatter Plot: Date and Difficulty')
-#plt.show() # this should be done as count of per date
+    # line plot of count of difficult:
+    df_viz['Month'] = df_viz['Date'].dt.month
+    temp_viz = df_viz.groupby(['Month', 'Difficulty']).agg({'Difficulty':'count'}).rename(columns={
+        'Difficulty':'Count'})
+    temp_viz.reset_index(inplace=True, drop=False)
 
-# line plot of count of difficult:
-df_viz['Month'] = df_viz['Date'].dt.month
-temp_viz = df_viz.groupby(['Month', 'Difficulty']).agg({'Difficulty':'count'}).rename(columns={
-    'Difficulty':'Count'})
-temp_viz.reset_index(inplace=True, drop=False)
-
-plt.figure(figsize=(12, 6))
-sns.lineplot(data=temp_viz, x='Month', y='Count', hue='Difficulty', marker='o')
-plt.title('Count of Hikes per Difficulty Over Time')
-plt.xticks(rotation=45)
-plt.tight_layout()
-#plt.show() # most difficult hiking is done in the summer, makes sense
+    plt.figure(figsize=(12, 6))
+    sns.lineplot(data=temp_viz, x='Month', y='Count', hue='Difficulty', marker='o')
+    plt.title('Count of Hikes per Difficulty Over Time')
+    plt.xticks(rotation=45)
+    plt.tight_layout()
+    plt.show() # most difficult hiking is done in the summer, makes sense
 
 
-#Bar Graph: Highest point avg per Difficulty
-df_viz['Highest Point'] = pd.to_numeric(df_viz['Highest Point'], errors='coerce')
-grouped_df = df_viz.groupby('Difficulty')['Highest Point'].mean().reset_index()
-plt.figure(figsize=(10, 6))
-sns.barplot(data=grouped_df, x='Difficulty', y='Highest Point')
-plt.title('Bar Graph: Highest Point Avg per Difficulty')
-#plt.show() # hard does have highest point
+    #Bar Graph: Highest point avg per Difficulty
+    df_viz['Highest Point'] = pd.to_numeric(df_viz['Highest Point'], errors='coerce')
+    grouped_df = df_viz.groupby('Difficulty')['Highest Point'].mean().reset_index()
+    plt.figure(figsize=(10, 6))
+    sns.barplot(data=grouped_df, x='Difficulty', y='Highest Point')
+    plt.title('Bar Graph: Highest Point Avg per Difficulty')
+    plt.show() # hard does have highest point
 
-# Correlation heat map
-corr = df_viz[num_cols].corr()
-plt.figure(figsize=(10, 8))
-sns.heatmap(corr, annot=True, cmap='coolwarm', linewidths=.5)
-plt.title('Correlation Heatmap of Numerical Columns')
-#plt.show() # rating and elevation, along with rate and highest point of course
+    # Correlation heat map
+    corr = df_viz[num_cols].corr()
+    plt.figure(figsize=(10, 8))
+    sns.heatmap(corr, annot=True, cmap='coolwarm', linewidths=.5)
+    plt.title('Correlation Heatmap of Numerical Columns')
+    plt.show() # rating and elevation, along with rate and highest point of course
 
 
 ############################################
 ########### CATEGORICAL CLEANING ###########
 ############################################
-df_2 = df.copy() # next step of full cleaning
 
-df_viz_g = df_viz.groupby('Key Features').size().reset_index(name='count')
+    df_viz_g = df_viz.groupby('Key Features').size().reset_index(name='count')
 
-plt.figure(figsize=(10, 6))
-sns.barplot(data=df_viz_g, y='count', x='Key Features')
-plt.title(f'bar of Key Features')
-plt.xticks(rotation=45)
-#plt.show()
+    plt.figure(figsize=(10, 6))
+    sns.barplot(data=df_viz_g, y='count', x='Key Features')
+    plt.title(f'bar of Key Features')
+    plt.xticks(rotation=45)
+    plt.show()
 
-df_viz_g = df_viz.groupby('Difficulty').size().reset_index(name='count')
+    df_viz_g = df_viz.groupby('Difficulty').size().reset_index(name='count')
 
-plt.figure(figsize=(10, 6))
-sns.barplot(data=df_viz_g, y='count', x='Difficulty')
-plt.title(f'bar of Difficulty')
-plt.xticks(rotation=45)
-plt.show()
+    plt.figure(figsize=(10, 6))
+    sns.barplot(data=df_viz_g, y='count', x='Difficulty')
+    plt.title(f'bar of Difficulty')
+    plt.xticks(rotation=45)
+    plt.show()
 
-df_viz_g = df_viz.groupby('Report Text').size().reset_index(name='count')
+    df_viz_g = df_viz.groupby('Report Text').size().reset_index(name='count')
 
-plt.figure(figsize=(10, 6))
-sns.barplot(data=df_viz_g, y='count', x='Report Text')
-plt.title(f'bar of Report Text')
-plt.xticks(rotation=45)
-plt.show()
+    plt.figure(figsize=(10, 6))
+    sns.barplot(data=df_viz_g, y='count', x='Report Text')
+    plt.title(f'bar of Report Text')
+    plt.xticks(rotation=45)
+    plt.show()
 
-df_viz_g = df_viz.groupby('Region').size().reset_index(name='count')
+    df_viz_g = df_viz.groupby('Region').size().reset_index(name='count')
 
-plt.figure(figsize=(10, 6))
-sns.barplot(data=df_viz_g, y='count', x='Region')
-plt.title(f'bar of Region')
-plt.xticks(rotation=45)
-plt.show()
+    plt.figure(figsize=(10, 6))
+    sns.barplot(data=df_viz_g, y='count', x='Region')
+    plt.title(f'bar of Region')
+    plt.xticks(rotation=45)
+    plt.show()
 
-df_viz_g = df_viz.groupby('Road').size().reset_index(name='count')
+    df_viz_g = df_viz.groupby('Road').size().reset_index(name='count')
 
-plt.figure(figsize=(10, 6))
-sns.barplot(data=df_viz_g, y ='count', x='Road')
-plt.title(f'bar of Road')
-plt.xticks(rotation=45)
-plt.show()
+    plt.figure(figsize=(10, 6))
+    sns.barplot(data=df_viz_g, y ='count', x='Road')
+    plt.title(f'bar of Road')
+    plt.xticks(rotation=45)
+    plt.show()
 
-df_viz_g = df_viz.groupby('Bugs').size().reset_index(name='count')
+    df_viz_g = df_viz.groupby('Bugs').size().reset_index(name='count')
 
-plt.figure(figsize=(10, 6))
-sns.barplot(data=df_viz_g, y='count', x='Bugs')
-plt.title(f'bar of Road')
-plt.xticks(rotation=45)
-plt.show()
+    plt.figure(figsize=(10, 6))
+    sns.barplot(data=df_viz_g, y='count', x='Bugs')
+    plt.title(f'bar of Road')
+    plt.xticks(rotation=45)
+    plt.show()
 
-df_viz_g = df_viz.groupby('Snow').size().reset_index(name='count')
+    df_viz_g = df_viz.groupby('Snow').size().reset_index(name='count')
 
-plt.figure(figsize=(10, 6))
-sns.barplot(data=df_viz_g, y='count', x='Snow')
-plt.title(f'bar of Snow')
-plt.xticks(rotation=45)
-plt.show()
+    plt.figure(figsize=(10, 6))
+    sns.barplot(data=df_viz_g, y='count', x='Snow')
+    plt.title(f'bar of Snow')
+    plt.xticks(rotation=45)
+    plt.show()
 
-df_viz_g = df_viz.groupby('Type of Hike').size().reset_index(name='count')
+    df_viz_g = df_viz.groupby('Type of Hike').size().reset_index(name='count')
 
-plt.figure(figsize=(10, 6))
-sns.barplot(data=df_viz_g, y='count', x='Type of Hike')
-plt.title(f'bar of Type of Hike')
-plt.xticks(rotation=45)
-plt.show()
+    plt.figure(figsize=(10, 6))
+    sns.barplot(data=df_viz_g, y='count', x='Type of Hike')
+    plt.title(f'bar of Type of Hike')
+    plt.xticks(rotation=45)
+    plt.show()
 
-df_viz_g = df_viz.groupby('Trail Conditions').size().reset_index(name='count')
+    df_viz_g = df_viz.groupby('Trail Conditions').size().reset_index(name='count')
 
-plt.figure(figsize=(10, 6))
-sns.barplot(data=df_viz_g, y='count', x='Trail Conditions')
-plt.title(f'bar of Trail Conditions')
-plt.xticks(rotation=45)
-plt.show()
+    plt.figure(figsize=(10, 6))
+    sns.barplot(data=df_viz_g, y='count', x='Trail Conditions')
+    plt.title(f'bar of Trail Conditions')
+    plt.xticks(rotation=45)
+    plt.show()
 
-#nbow check for Null values
-plt.figure(figsize=(10, 6))
-msno.matrix(df_viz[cat_cols])
-plt.title('Missing Value Matrix')
-plt.show() # not a lot of paterns as to when the data is missing
+    #nbow check for Null values
+    plt.figure(figsize=(10, 6))
+    msno.matrix(df_viz[cat_cols])
+    plt.title('Missing Value Matrix')
+    plt.show() # not a lot of paterns as to when the data is missing
 
 
 #'Key Features',
 # this one is one of the hardest to clean, I will need to parse it and hope to OHE:
+df_2 = df.copy()
 key_feat_list = list(df_2['Key Features'].unique())
 key_feat_list = [ast.literal_eval(list) for list in key_feat_list] # handle quoted lists
 key_feat_list = [item for sublist in key_feat_list for item in sublist]
@@ -257,6 +258,7 @@ df_2['Difficulty'] = df_2['Difficulty'].map(diff_map) # this should be the only 
 
 
 # 'Region',
+df_2['Region'].value_counts()
 # TODO: The region is made up of two parts, split it with string split, and maybe OHE the first
 #  portion? Then consider Label Encoding the second (too much variety with 60+?) and see later if
 #  the feature is important enough on the second region type (definitely keep the first,
