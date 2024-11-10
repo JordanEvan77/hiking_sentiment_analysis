@@ -11,7 +11,11 @@ df_model = pd.read_csv('data\model_ready\model_data1.csv')
 hike_attributes = [i for i in df_model.columns if i not in ['sentiment']]
 X = df_model[hike_attributes]
 y = df_model[['sentiment']]
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+reviewer_ids = df_model[['reviewer_id']]
+
+X_train, X_test, y_train, y_test, train_ids, test_ids = train_test_split(X, y, reviewer_ids,
+                           test_size=0.2, random_state=42)
+# so that I can keep track of everyone
 
 # model to get a baseline, and then make recommendations once accurate
 model_knn = NearestNeighbors(metric='cosine', algorithm='brute')
@@ -27,10 +31,23 @@ print(classification_report(y_test, predicted_sentiments))
 
 
 
-## We want anything above .25, since I would say 0 is neutral/mixed, then .25 indicates enough
-# enjoyment to recommend
-positive_sentiment_hikes = df_model[df_model['sentiment']>= 0.25]
-print('positive reviews to recommend', len(positive_sentiment_hikes))
+## I want the ids in the test set to then get their highest possible recommendation from their
+# nearest neighbors:
+recommendations = []
+for i, reviewer_id in enumerate(test_ids['reviewer_id'].unique()):
+    idx = test_ids[test_ids['reviewer_id'] == reviewer_id].index
+    if not idx.empty:
+        neighbor_idx = indices[idx[0]]
+        similar_hikes = X_train.iloc[neighbor_idx]
+        similar_hikes['sentiment'] = y_train.iloc[neighbor_idx].values
+        highest_sentiment_hike = similar_hikes.loc[similar_hikes['sentiment'].idxmax()]
+        recommendations.append((reviewer_id, highest_sentiment_hike))
+
+# Check recs
+print('Recommendations for each unique reviewer ID in the test set:')
+for reviewer_id, hike in recommendations:
+    print(f'Reviewer ID: {reviewer_id}')
+    print(f'Was reccomended hike: {hike}')
 
 
 
@@ -38,11 +55,6 @@ print('positive reviews to recommend', len(positive_sentiment_hikes))
 
 
 
-
-
-
-
-# TODO: DO A MORE SPECIFIC FILTERING ALGO TO COMPARE
 
 
 if __name__ == '__main__':
