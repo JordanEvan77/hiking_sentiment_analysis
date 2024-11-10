@@ -256,6 +256,9 @@ df_2['Difficulty'] = df_2['Difficulty'].map(diff_map) # this should be the only 
 # 'Report Text',
 # this is the crucial part of the process where I get the signal, using sentiment analysis
 #  will use simple categories to start:
+# we don't want anything without a signal
+df_2 = df_2[~(df_2['Report Text'].isnull())]
+
 from hiking_sentiment_analysis.a3_sentiment_analysis import run_sentiment_check
 print('running sentiment')
 df_2['sentiment'] = df_2['Report Text'].apply(run_sentiment_check)
@@ -304,7 +307,7 @@ df_2 = df_2[[i for i in df_2.columns if i not in ['Report Text', 'Trail Conditio
 # 'Road',#'Bugs', 'Snow', 'Type of Hike',
 #  Typical OHE
 df_2 = pd.get_dummies(df_2, columns=['Road', 'Bugs', 'Snow', 'Type of Hike', 'large_region',
-                                     'general_trail_condition', 'Key Features'])
+                                     'general_trail_condition'])
 
 # Check what the count of nulls is now that encoding is done and we can potentially impute:
 cat_nulls = df_2[[i for i in df_2.columns if i not in id_cols+num_cols]].isna().sum()
@@ -321,9 +324,6 @@ cat_nulls = df_2[[i for i in df_2.columns if i not in id_cols+num_cols]].isna().
 #The report text is our signal and has very few nulls, and the region is also a value that
 # contextually doesn't make a lot of sense to impute, and also has very few nulls.
 
-#drop nulls before I do imputing
-df_2 = df_2[~(df_2['Report Text'].isnull())]
-
 
 #impute after encoding!
 # 'Hike Name' as index??? sentiment analysis and this should run
@@ -332,11 +332,20 @@ reviewer_encoder = LabelEncoder()
 df_2['reviewer_id'] = reviewer_encoder.fit_transform(df_2['Trail Report By'])
 df_2 = df_2.drop('Trail Report By', axis=1)
 
+##################################
+########Date Features############
+##################################
+df_2['Date'] = pd.to_datetime(df_2['Date'])
+df_2[['Day', 'Month', 'Year']] = df_2['Date'].apply(lambda x: pd.Series([int(x.day), int(x.month),
+                                                                         int(x.year)]))
+df_2 = df_2.drop('Date', axis=1)
 
+#impute
 impute = KNNImputer(n_neighbors=3)
 df_imputed = pd.DataFrame(impute.fit_transform(df_2), columns=['Difficulty'])
 
 
+print('The count of column after categorical cleaning', df_imputed.shape)
 
 ############################################
 ########### NUMERIC CLEANING ###########
@@ -390,15 +399,15 @@ df_3 = drop_outliers(df_3, num_cols)
 ######################################
 # I believe I want to scale even the binary variables for the model
 #TODO: Write this in study guide
-
+print('scaling')
 
 
 
 #####################################
 ###Class Imbalance!##################
 #####################################
-from imblearn.over_sampling import SMOTE
-smote = SMOTE(random_state=22) #TODO: Write this in study guide
+#from imblearn.over_sampling import SMOTE
+#smote = SMOTE(random_state=22) #TODO: Write this in study guide
 
 
 ##########################################
