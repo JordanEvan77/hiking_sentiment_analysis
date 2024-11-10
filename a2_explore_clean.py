@@ -246,7 +246,7 @@ unique_items = list(set(key_feat_list)) # perfect, only 19 items
 for new_col in unique_items:
     df_2[f'{new_col}_dummy'] = df_2['Key Features'].apply(lambda x: 1 if new_col in x else 0)
 # this OHE type is preferred over LE, and will provide better performance
-
+df_2 = df_2.drop('Key Features', axis=1)
 
 # 'Difficulty', Encoding:
 diff_map = {'Easy':0, 'Easy/Moderate':1, 'Moderate':2, 'Moderate/Hard':3, 'Hard':4}
@@ -284,7 +284,7 @@ df_2['small_region'].value_counts() # too many values for OHE and LE feels wrong
 df_2 = df_2[[i for i in df_2.columns if i not in ['small_region', 'Region']]]
 
 # 'Trail Conditions']
-df_2['Trail Conditions'].value_counts()
+#df_2['Trail Conditions'].value_counts()
 # This also has some segments to it. So for items with ':' grab the first portion as a column,
 # and save the second as another column,
 # should be able to OHE new first column, and maybe label encode rest? Depends on variety,
@@ -342,7 +342,8 @@ df_2 = df_2.drop('Date', axis=1)
 
 #impute
 impute = KNNImputer(n_neighbors=3)
-df_imputed = pd.DataFrame(impute.fit_transform(df_2), columns=['Difficulty'])
+df_imputed = df_2.copy()
+df_imputed['Difficulty'] = pd.DataFrame(impute.fit_transform(df_2[['Difficulty']]))
 
 
 print('The count of column after categorical cleaning', df_imputed.shape)
@@ -351,7 +352,8 @@ print('The count of column after categorical cleaning', df_imputed.shape)
 ########### NUMERIC CLEANING ###########
 ############################################
 df_3 = df_imputed.copy()
-# ['Date', 'Rating', 'Highest Point', 'Elevation']
+num_cols = ['Month', 'Day', 'Year', 'Rating', 'Highest Point', 'Elevation']
+# ['Month', 'Day', 'Year' 'Rating', 'Highest Point', 'Elevation']
 def drop_outliers(df, num_cols, threshold=1.5):
     df_cleaned = df.copy()
     total_rows_lost = 0
@@ -390,7 +392,7 @@ df_3.drop_duplicates(inplace=True)
 
 #do outliers:
 
-df_3 = drop_outliers(df_3, num_cols)
+df_3 = drop_outliers(df_3, num_cols) # TODO: Do we maybe not want to drop month outliers?
 
 
 
