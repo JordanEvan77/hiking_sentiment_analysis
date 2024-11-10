@@ -333,6 +333,22 @@ df_3 = df_num
 
 
 
+
+
+######################################
+########Scaling for KNN###############
+######################################
+# I believe I want to scale even the binary variables for the model
+
+
+
+
+##########################################
+##########Dimensionality reduction########
+##########################################
+# I would like to try on two different datasets, one with and one without PCA
+
+
 ############################################
 ########### DONE, Save out ###########
 ############################################
@@ -342,4 +358,7 @@ df_3 = df_num
 
 
 final_df = []
-final_df.to_csv('data\model_ready\model_data1.csv', index=False)
+final_df_pca = []
+final_df.to_csv('data\model_ready\model_data1_no_pca.csv', index=False)
+final_df_pca.to_csv('data\model_ready\model_data1_no_pca.csv', index=False)
+

@@ -1,5 +1,6 @@
 from textblob import TextBlob
 import pandas as pd
+from Scratch.loggers import data_dir
 
 def run_sentiment_check(text):
     '''This little helper function will iterate through each entry in the columns to
@@ -12,8 +13,10 @@ def run_sentiment_check(text):
     else:
         return  -1 # Negative
 
+    #returns a range.
 
 
-df_sent = pd.read_csv('data\model_ready\model_data1.csv')
 
-df_sent['Sentiment'] = df_sent['Report Text'].apply(run_sentiment_check)
+df_sent = pd.read_csv(data_dir + 'hiking_reports_36.csv')
+
+df_sent['sentiment'] = df_sent['Report Text'].apply(run_sentiment_check)
