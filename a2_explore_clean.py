@@ -298,7 +298,8 @@ df_2[['general_trail_condition', 'detail_trail_condition']] = df_2['Trail Condit
 print(df_2['general_trail_condition'].value_counts()) # definitely OHE
 print(df_2['detail_trail_condition'].value_counts()) # could take each sub part of the text and
 # OHE it as well! But the general should be good for now, so OHE it and drop rest for now
-df_2 = df_2[[i for i in df_2.columns if i not in ['Trail Conditions', 'detail_trail_condition']]]
+df_2 = df_2[[i for i in df_2.columns if i not in ['Report Text', 'Trail Conditions',
+                                                  'detail_trail_condition']]]
 
 # 'Road',#'Bugs', 'Snow', 'Type of Hike',
 #  Typical OHE
@@ -325,10 +326,11 @@ df_2 = df_2[~(df_2['Report Text'].isnull())]
 
 
 #impute after encoding!
-#TODO: 'Hike Name' as index??? sentiment analysis and this should run
-df.set_index('Name', inplace=True)
+# 'Hike Name' as index??? sentiment analysis and this should run
+df_2.set_index('Hike Name', inplace=True)
 reviewer_encoder = LabelEncoder()
-df_2['reviewer_id'] = reviewer_encoder.fit_transform(df_2['Report By'])
+df_2['reviewer_id'] = reviewer_encoder.fit_transform(df_2['Trail Report By'])
+df_2 = df_2.drop('Trail Report By', axis=1)
 
 
 impute = KNNImputer(n_neighbors=3)
@@ -339,9 +341,47 @@ df_imputed = pd.DataFrame(impute.fit_transform(df_2), columns=['Difficulty'])
 ############################################
 ########### NUMERIC CLEANING ###########
 ############################################
-df_3 = df_num
+df_3 = df_imputed.copy()
+# ['Date', 'Rating', 'Highest Point', 'Elevation']
+def drop_outliers(df, num_cols, threshold=1.5):
+    df_cleaned = df.copy()
+    total_rows_lost = 0
+    for col in num_cols:
+        # IQR stuff
+        Q1 = df_cleaned[col].quantile(0.25)
+        Q3 = df_cleaned[col].quantile(0.75)
+        IQR = Q3 - Q1
+        lower_bound = Q1 - (threshold * IQR)
+        upper_bound = Q3 + (threshold * IQR)
+
+        rows_before = df_cleaned.shape[0]
+        df_cleaned = df_cleaned[(df_cleaned[col] >= lower_bound) & (df_cleaned[col] <= upper_bound)]
+
+        # get counts
+        rows_after = df_cleaned.shape[0]
+        rows_lost = rows_before - rows_after
+        total_rows_lost += rows_lost
+
+        print(f'{col} outliers removed, dropped {rows_lost} rows')
+    print(f'Total rows lost: {total_rows_lost}')
+
+    return df_cleaned
+
+#find count of missing values and impute with median
+
+print(df_3[num_cols].isnull().sum())
+df_3[num_cols].fillna(df_3[num_cols].median(), inplace=True)
+
+# Check for duplicates
+print('dupes', df_3.duplicated().sum())
 
 
+# safe to drop?
+df_3.drop_duplicates(inplace=True)
+
+#do outliers:
+
+df_3 = drop_outliers(df_3, num_cols)
 
 
 
@@ -349,8 +389,16 @@ df_3 = df_num
 ########Scaling for KNN###############
 ######################################
 # I believe I want to scale even the binary variables for the model
+#TODO: Write this in study guide
 
 
+
+
+#####################################
+###Class Imbalance!##################
+#####################################
+from imblearn.over_sampling import SMOTE
+smote = SMOTE(random_state=22) #TODO: Write this in study guide
 
 
 ##########################################

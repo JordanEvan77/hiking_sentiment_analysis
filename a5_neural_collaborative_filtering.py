@@ -25,9 +25,11 @@ X_train, X_test, y_train, y_test, train_ids, test_ids = train_test_split(X, y, r
 num_reviewers = df_model['reviewer_id'].nunique()
 num_hike_features = X_train.shape[1]
 
+#create general input for the model
 input_reviewer = Input(shape=(1,), name='reviewer')
 input_hike = Input(shape=(num_hike_features,), name='hike_features')
 
+#create layers and embed
 embedding_reviewer = Embedding(num_reviewers, 8, input_length=1)(input_reviewer)
 flatten_reviewer = Flatten()(embedding_reviewer)
 
@@ -40,17 +42,17 @@ model = Model([input_reviewer, input_hike], output)
 model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
 
 # Train the NCF model
-model.fit([train_ids, X_train_scaled], y_train, epochs=10, batch_size=32, validation_split=0.2)
+model.fit([train_ids, X_train], y_train, epochs=10, batch_size=32, validation_split=0.2)
 
-# Evaluate the model
-y_pred = model.predict([test_ids, X_test_scaled])
+# check acc
+y_pred = model.predict([test_ids, X_test])
 y_pred_binary = (y_pred > 0.5).astype(int)
 
 accuracy = accuracy_score(y_test, y_pred_binary)
 print(f"Accuracy: {accuracy}")
 print(classification_report(y_test, y_pred_binary))
 
-# Recommendations
+#recommendations generate
 recommendations = []
 for i, reviewer_id in enumerate(test_ids['reviewer_id_encoded'].unique()):
     idx = test_ids[test_ids['reviewer_id_encoded'] == reviewer_id].index
