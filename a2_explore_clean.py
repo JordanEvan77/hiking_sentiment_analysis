@@ -4,6 +4,7 @@ import sklearn
 import missingno as msno
 import matplotlib.pyplot as plt
 from sklearn.impute import KNNImputer
+from sklearn.preprocessing import LabelEncoder, StandardScaler
 import seaborn as sns
 from Scratch.loggers import data_dir
 import ast
@@ -254,7 +255,10 @@ df_2['Difficulty'] = df_2['Difficulty'].map(diff_map) # this should be the only 
 
 # 'Report Text',
 # this is the crucial part of the process where I get the signal, using sentiment analysis
-# TODO: Create sentiment analysis in other script and bring it in here
+#  will use simple categories to start:
+from hiking_sentiment_analysis.a3_sentiment_analysis import run_sentiment_check
+print('running sentiment')
+df_2['sentiment'] = df_2['Report Text'].apply(run_sentiment_check)
 
 
 # 'Region',
@@ -280,7 +284,7 @@ df_2 = df_2[[i for i in df_2.columns if i not in ['small_region', 'Region']]]
 df_2['Trail Conditions'].value_counts()
 # This also has some segments to it. So for items with ':' grab the first portion as a column,
 # and save the second as another column,
-# TODO: should be able to OHE new first column, and maybe label encode rest? Depends on variety,
+# should be able to OHE new first column, and maybe label encode rest? Depends on variety,
 # may just dro pit?
 def split_condition(i):
     if ':' in str(i):
@@ -297,7 +301,7 @@ print(df_2['detail_trail_condition'].value_counts()) # could take each sub part 
 df_2 = df_2[[i for i in df_2.columns if i not in ['Trail Conditions', 'detail_trail_condition']]]
 
 # 'Road',#'Bugs', 'Snow', 'Type of Hike',
-# TODO: Typical OHE
+#  Typical OHE
 df_2 = pd.get_dummies(df_2, columns=['Road', 'Bugs', 'Snow', 'Type of Hike', 'large_region',
                                      'general_trail_condition', 'Key Features'])
 
@@ -319,8 +323,14 @@ cat_nulls = df_2[[i for i in df_2.columns if i not in id_cols+num_cols]].isna().
 #drop nulls before I do imputing
 df_2 = df_2[~(df_2['Report Text'].isnull())]
 
+
 #impute after encoding!
-#TODO: 'Hike Name' and 'Trail Report By' as index??? sentiment analysis and this should run
+#TODO: 'Hike Name' as index??? sentiment analysis and this should run
+df.set_index('Name', inplace=True)
+reviewer_encoder = LabelEncoder()
+df_2['reviewer_id'] = reviewer_encoder.fit_transform(df_2['Report By'])
+
+
 impute = KNNImputer(n_neighbors=3)
 df_imputed = pd.DataFrame(impute.fit_transform(df_2), columns=['Difficulty'])
 
