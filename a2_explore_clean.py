@@ -415,7 +415,9 @@ print('scaling')
 ##########################################
 ##########Dimensionality reduction########
 ##########################################
-# I would like to try on two different datasets, one with and one without PCA
+# I would like to try on two different datasets, one with and one without PCA. ALl other cleaning
+# steps are completely needed (outliers, nulls, feature engineering, encoding, class imbalance,
+# scaling)
 
 
 ############################################
@@ -429,5 +431,5 @@ print('scaling')
 final_df = []
 final_df_pca = []
 final_df.to_csv('data\model_ready\model_data1_no_pca.csv', index=False)
-final_df_pca.to_csv('data\model_ready\model_data1_no_pca.csv', index=False)
+final_df_pca.to_csv('data\model_ready\model_data1_pca.csv', index=False)
 
