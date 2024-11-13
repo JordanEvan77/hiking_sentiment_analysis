@@ -395,7 +395,7 @@ df_3.drop_duplicates(inplace=True)
 df_3 = drop_outliers(df_3, num_cols) # TODO: Do we maybe not want to drop month outliers?
 #####################################
 ###Class Imbalance!##################
-#####################################
+##################################### # TODO: Are there any nans?
 from imblearn.over_sampling import SMOTE
 smote = SMOTE(random_state=22) # I believe the minority class has a reasonable representation,
 # I just want more of them
