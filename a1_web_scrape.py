@@ -141,8 +141,10 @@ while True:
             data_dir + 'raw\hiking_reports.csv',
             index=False)
 
+
 raw_df.to_csv(
     data_dir + 'raw\hiking_reports.csv',
     index=False)
 driver.quit()
 print(raw_df.shape, 'saved!')
+#Died at: Navigating to: Summit Lake — May. 22, 2022

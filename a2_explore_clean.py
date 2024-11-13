@@ -399,17 +399,31 @@ df_3 = drop_outliers(df_3, num_cols) # TODO: Do we maybe not want to drop month 
 ######################################
 ########Scaling for KNN###############
 ######################################
-# I believe I want to scale even the binary variables for the model
-#TODO: Write this in study guide
+#Standardization OVER normalization for now
 print('scaling')
+from sklearn.preprocessing import StandardScaler
+
+scaler = StandardScaler()
+standardized_data = scaler.fit_transform(df_3)
+df_standardized = pd.DataFrame(standardized_data, columns=df_3.columns)
+
+
 
 
 
 #####################################
 ###Class Imbalance!##################
 #####################################
-#from imblearn.over_sampling import SMOTE
-#smote = SMOTE(random_state=22) #TODO: Write this in study guide
+from imblearn.over_sampling import SMOTE
+smote = SMOTE(random_state=22) # I believe the minority class has a reasonable representation,
+# I just want more of them
+independent_vars = [i for i in df_standardized.columns if i != 'sentiment']
+X = df_standardized[independent_vars]
+y = df_standardized[['sentiment']]
+X_res, y_res = smote.fit_resample(X, y)
+df_resampled = pd.DataFrame(X_res, columns=independent_vars)
+df_resampled['sentiment'] = y_res
+
 
 
 ##########################################
@@ -418,6 +432,13 @@ print('scaling')
 # I would like to try on two different datasets, one with and one without PCA. ALl other cleaning
 # steps are completely needed (outliers, nulls, feature engineering, encoding, class imbalance,
 # scaling)
+print('PCA')
+
+
+#TODO: May want to do general feature selection over dimensionality reduction? for another option
+# in model?
+
+
 
 
 ############################################
