@@ -393,7 +393,18 @@ df_3.drop_duplicates(inplace=True)
 #do outliers:
 
 df_3 = drop_outliers(df_3, num_cols) # TODO: Do we maybe not want to drop month outliers?
-
+#####################################
+###Class Imbalance!##################
+#####################################
+from imblearn.over_sampling import SMOTE
+smote = SMOTE(random_state=22) # I believe the minority class has a reasonable representation,
+# I just want more of them
+independent_vars = [i for i in df_3.columns if i != 'sentiment']
+X = df_3[independent_vars]
+y = df_3[['sentiment']]
+X_res, y_res = smote.fit_resample(X, y)
+df_resampled = pd.DataFrame(X_res, columns=independent_vars)
+df_resampled['sentiment'] = y_res
 
 
 ######################################
@@ -404,26 +415,8 @@ print('scaling')
 from sklearn.preprocessing import StandardScaler
 
 scaler = StandardScaler()
-standardized_data = scaler.fit_transform(df_3)
+standardized_data = scaler.fit_transform(df_resampled)
 df_standardized = pd.DataFrame(standardized_data, columns=df_3.columns)
-
-
-
-
-
-#####################################
-###Class Imbalance!##################
-#####################################
-from imblearn.over_sampling import SMOTE
-smote = SMOTE(random_state=22) # I believe the minority class has a reasonable representation,
-# I just want more of them
-independent_vars = [i for i in df_standardized.columns if i != 'sentiment']
-X = df_standardized[independent_vars]
-y = df_standardized[['sentiment']]
-X_res, y_res = smote.fit_resample(X, y)
-df_resampled = pd.DataFrame(X_res, columns=independent_vars)
-df_resampled['sentiment'] = y_res
-
 
 
 ##########################################
