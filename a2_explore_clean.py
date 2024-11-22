@@ -340,13 +340,18 @@ df_2[['Day', 'Month', 'Year']] = df_2['Date'].apply(lambda x: pd.Series([int(x.d
                                                                          int(x.year)]))
 df_2 = df_2.drop('Date', axis=1)
 
-#impute
+
+
+##################################
+######Impute Categorical###########
+##################################
 impute = KNNImputer(n_neighbors=3)
 df_imputed = df_2.copy()
-df_imputed['Difficulty'] = pd.DataFrame(impute.fit_transform(df_2[['Difficulty']]))
+imputed_values = impute.fit_transform(df_2[['Difficulty']])
+df_imputed['Difficulty'] = imputed_values
 
 
-print('The count of column after categorical cleaning', df_imputed.shape)
+
 
 ############################################
 ########### NUMERIC CLEANING ###########
@@ -400,8 +405,12 @@ from imblearn.over_sampling import SMOTE
 smote = SMOTE(random_state=22) # I believe the minority class has a reasonable representation,
 # I just want more of them
 independent_vars = [i for i in df_3.columns if i != 'sentiment']
+df_3[independent_vars] = df_3[independent_vars].apply(pd.to_numeric)
+bool_cols = df_3.select_dtypes(include='bool').columns
+df_3[bool_cols] = df_3[bool_cols].astype('int64')
 X = df_3[independent_vars]
-y = df_3[['sentiment']]
+y = df_3[['sentiment']].astype('int64')
+
 X_res, y_res = smote.fit_resample(X, y)
 df_resampled = pd.DataFrame(X_res, columns=independent_vars)
 df_resampled['sentiment'] = y_res
