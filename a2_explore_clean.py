@@ -452,6 +452,7 @@ plt.show()
 pca = PCA(n_components=num_components)
 df_final_pca = pd.DataFrame(pca.fit_transform(df_final))
 df_final_pca['sentiment'] = y_res
+df_final['sentiment'] = y_res
 
 #TODO: May want to do general feature selection over dimensionality reduction? for another option
 # in model?
