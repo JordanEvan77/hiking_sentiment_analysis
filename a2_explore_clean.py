@@ -4,6 +4,7 @@ import sklearn
 import missingno as msno
 import matplotlib.pyplot as plt
 from sklearn.impute import KNNImputer
+from sklearn.decomposition import PCA
 from sklearn.preprocessing import LabelEncoder, StandardScaler
 import seaborn as sns
 from Scratch.loggers import data_dir
@@ -352,7 +353,6 @@ df_imputed['Difficulty'] = imputed_values
 
 
 
-
 ############################################
 ########### NUMERIC CLEANING ###########
 ############################################
@@ -405,15 +405,18 @@ from imblearn.over_sampling import SMOTE
 smote = SMOTE(random_state=22) # I believe the minority class has a reasonable representation,
 # I just want more of them
 independent_vars = [i for i in df_3.columns if i != 'sentiment']
-df_3[independent_vars] = df_3[independent_vars].apply(pd.to_numeric)
-bool_cols = df_3.select_dtypes(include='bool').columns
-df_3[bool_cols] = df_3[bool_cols].astype('int64')
+df_3 = df_3.astype('float64')
+#df_3[independent_vars] = df_3[independent_vars].apply(pd.to_numeric)
+# bool_cols = df_3.select_dtypes(include='bool').columns
+# df_3[bool_cols] = df_3[bool_cols].astype('Int64')
+
+
 X = df_3[independent_vars]
-y = df_3[['sentiment']].astype('int64')
+y = df_3[['sentiment']].astype('Int64')
 
 X_res, y_res = smote.fit_resample(X, y)
 df_resampled = pd.DataFrame(X_res, columns=independent_vars)
-df_resampled['sentiment'] = y_res
+#df_resampled['sentiment'] = y_res # wait
 
 
 ######################################
@@ -425,7 +428,7 @@ from sklearn.preprocessing import StandardScaler
 
 scaler = StandardScaler()
 standardized_data = scaler.fit_transform(df_resampled)
-df_standardized = pd.DataFrame(standardized_data, columns=df_3.columns)
+df_standardized = pd.DataFrame(standardized_data, columns=df_resampled.columns)
 
 
 ##########################################
@@ -434,13 +437,26 @@ df_standardized = pd.DataFrame(standardized_data, columns=df_3.columns)
 # I would like to try on two different datasets, one with and one without PCA. ALl other cleaning
 # steps are completely needed (outliers, nulls, feature engineering, encoding, class imbalance,
 # scaling)
+df_final = df_standardized.copy()
 print('PCA')
+pca = PCA().fit(df_final)
+cumulative_explained_variance = np.cumsum(pca.explained_variance_ratio_)
+num_components = np.argmax(cumulative_explained_variance >= 0.90) + 1
+print('90% variance is captured at', num_components)
 
+plt.plot(range(1, len(pca.explained_variance_ratio_) + 1), pca.explained_variance_ratio_.cumsum(), marker='o')
+plt.xlabel('Number of Components')
+plt.ylabel('Cumulative Explained Variance')
+plt.show()
+
+pca = PCA(n_components=num_components)
+df_final_pca = pca.fit_transform(df_final)
+df_final_pca['sentiment'] = y_res
 
 #TODO: May want to do general feature selection over dimensionality reduction? for another option
 # in model?
 
-
+# could delete a bunch of DFs if comp becomes a problem
 
 
 ############################################
@@ -451,8 +467,6 @@ print('PCA')
 #show alternate pipeline cleaning, as alternative
 
 
-final_df = []
-final_df_pca = []
-final_df.to_csv('data\model_ready\model_data1_no_pca.csv', index=False)
-final_df_pca.to_csv('data\model_ready\model_data1_pca.csv', index=False)
-
+df_final.to_csv('data\model_ready\model_data1_no_pca.csv', index=False)
+df_final_pca.to_csv('data\model_ready\model_data1_pca.csv', index=False)
+print('Complete')
