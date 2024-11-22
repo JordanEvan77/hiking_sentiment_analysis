@@ -7,7 +7,7 @@ from sklearn.impute import KNNImputer
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import LabelEncoder, StandardScaler
 import seaborn as sns
-from Scratch.loggers import data_dir
+from Scratch.loggers import data_dir, data_out
 import ast
 
 plt.ion()
@@ -450,7 +450,7 @@ plt.ylabel('Cumulative Explained Variance')
 plt.show()
 
 pca = PCA(n_components=num_components)
-df_final_pca = pca.fit_transform(df_final)
+df_final_pca = pd.DataFrame(pca.fit_transform(df_final))
 df_final_pca['sentiment'] = y_res
 
 #TODO: May want to do general feature selection over dimensionality reduction? for another option
@@ -467,6 +467,6 @@ df_final_pca['sentiment'] = y_res
 #show alternate pipeline cleaning, as alternative
 
 
-df_final.to_csv('data\model_ready\model_data1_no_pca.csv', index=False)
-df_final_pca.to_csv('data\model_ready\model_data1_pca.csv', index=False)
+df_final.to_csv(data_out+'model_data1_no_pca.csv', index=False)
+df_final_pca.to_csv(data_out+'model_data1_pca.csv', index=False)
 print('Complete')
