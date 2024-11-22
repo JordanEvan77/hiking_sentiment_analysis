@@ -52,7 +52,7 @@ def get_recommendations(test_ids, indices, X_train, y_train):
         if not idx.empty:
             neighbor_idx = indices[idx[0]]
             similar_hikes = X_train.iloc[neighbor_idx]
-            similar_hikes['sentiment'] = y_train.iloc[neighbor_idx].values
+            similar_hikes.loc['sentiment'] = y_train.iloc[neighbor_idx].values
             highest_sentiment_hike = similar_hikes.loc[similar_hikes['sentiment'].idxmax()]
             recommendations.append((reviewer_id, highest_sentiment_hike))
 
@@ -79,15 +79,16 @@ if __name__ == '__main__':
     X_train, X_test, y_train, y_test, train_ids, test_ids, model_knn, indices = \
         split_data_and_train(df_model)
 
-    get_recommendations(test_ids, indices, X_train, y_train)
+    # get_recommendations(test_ids, indices, X_train, y_train)
 
     #PCA
+    print('NOW WITH PCA')
     df_model_pca = pd.read_csv(data_out + 'model_data1_pca.csv')
 
     X_train, X_test, y_train, y_test, train_ids, test_ids, model_knn, indices = \
         split_data_and_train(df_model)
 
-    get_recommendations(test_ids, indices, X_train, y_train)
+    # get_recommendations(test_ids, indices, X_train, y_train)
 
 
 
