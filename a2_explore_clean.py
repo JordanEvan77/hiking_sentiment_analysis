@@ -308,7 +308,7 @@ df_2 = df_2[[i for i in df_2.columns if i not in ['Report Text', 'Trail Conditio
 # 'Road',#'Bugs', 'Snow', 'Type of Hike',
 #  Typical OHE
 df_2 = pd.get_dummies(df_2, columns=['Road', 'Bugs', 'Snow', 'Type of Hike', 'large_region',
-                                     'general_trail_condition', 'Hike Name'])
+                                     'general_trail_condition'])
 
 # Check what the count of nulls is now that encoding is done and we can potentially impute:
 cat_nulls = df_2[[i for i in df_2.columns if i not in id_cols+num_cols]].isna().sum()
@@ -328,12 +328,14 @@ cat_nulls = df_2[[i for i in df_2.columns if i not in id_cols+num_cols]].isna().
 
 #impute after encoding!
 # 'Hike Name' as index??? sentiment analysis and this should run
-# df_2.set_index('Hike Name', inplace=True)
+
 reviewer_encoder = LabelEncoder()
 df_2['reviewer_id'] = reviewer_encoder.fit_transform(df_2['Trail Report By'])
 df_2['hike_id'] = reviewer_encoder.fit_transform(df_2['Hike Name'])
 df_2 = df_2.drop('Trail Report By', axis=1)
 df_2 = df_2.drop('Hike Name', axis=1)
+df_2.set_index(['hike_id', 'reviewer_id'], inplace=True)
+
 ##################################
 ########Date Features############
 ##################################
@@ -468,7 +470,8 @@ df_final['sentiment'] = y_res
 
 #show alternate pipeline cleaning, as alternative
 
-
+df_final.reset_index(inplace=True)
+df_final_pca.reset_index(inplace=True)
 df_final.to_csv(data_out+'model_data1_no_pca.csv')
 df_final_pca.to_csv(data_out+'model_data1_pca.csv')
 print('Complete')
