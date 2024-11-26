@@ -74,6 +74,7 @@ if __name__ == '__main__':
     print('Start Filtering')
 
     df_model = pd.read_csv(data_out + 'model_data1_no_pca.csv')
+    df_model.set_index('Hike Name', inplace=True)
     #df_final_pca.to_csv(data_out + 'model_data1_pca.csv', index=False)
 
     X_train, X_test, y_train, y_test, train_ids, test_ids, model_knn, indices = \
