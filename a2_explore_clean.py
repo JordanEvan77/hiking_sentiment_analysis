@@ -433,7 +433,7 @@ from sklearn.preprocessing import StandardScaler
 scaler = StandardScaler()
 standardized_data = scaler.fit_transform(df_resampled)
 df_standardized = pd.DataFrame(standardized_data, columns=df_resampled.columns)
-
+df_standardized.index = df_resampled.index
 
 ##########################################
 ##########Dimensionality reduction########
@@ -456,6 +456,8 @@ plt.show()
 pca = PCA(n_components=num_components)
 df_final_pca = pd.DataFrame(pca.fit_transform(df_final))
 df_final_pca['sentiment'] = y_res
+df_final_pca.index = df_final.index
+
 df_final['sentiment'] = y_res
 
 #TODO: May want to do general feature selection over dimensionality reduction? for another option
@@ -471,8 +473,8 @@ df_final['sentiment'] = y_res
 
 #show alternate pipeline cleaning, as alternative
 
-df_final.reset_index(inplace=True)
-df_final_pca.reset_index(inplace=True)
+df_final.reset_index(inplace=True, drop=False)
+df_final_pca.reset_index(inplace=True, drop=False)
 df_final.to_csv(data_out+'model_data1_no_pca.csv')
 df_final_pca.to_csv(data_out+'model_data1_pca.csv')
 print('Complete')
