@@ -335,7 +335,8 @@ df_2['hike_id'] = reviewer_encoder.fit_transform(df_2['Hike Name'])
 df_2 = df_2.drop('Trail Report By', axis=1)
 df_2 = df_2.drop('Hike Name', axis=1)
 df_2.set_index(['hike_id', 'reviewer_id'], inplace=True)
-
+#TODO: Having index issues, track through process, and finalize a4 and a5! I want both to just be
+# columns!
 ##################################
 ########Date Features############
 ##################################
@@ -407,12 +408,12 @@ df_3 = drop_outliers(df_3, num_cols) # TODO: Do we maybe not want to drop month 
 from imblearn.over_sampling import SMOTE
 smote = SMOTE(random_state=22) # I believe the minority class has a reasonable representation,
 # I just want more of them
+df_3.reset_index(inplace=True, drop=False)
 independent_vars = [i for i in df_3.columns if i != 'sentiment']
 df_3 = df_3.astype('float64')
 #df_3[independent_vars] = df_3[independent_vars].apply(pd.to_numeric)
 # bool_cols = df_3.select_dtypes(include='bool').columns
 # df_3[bool_cols] = df_3[bool_cols].astype('Int64')
-
 
 X = df_3[independent_vars]
 y = df_3[['sentiment']].astype('Int64')
@@ -420,7 +421,7 @@ y = df_3[['sentiment']].astype('Int64')
 X_res, y_res = smote.fit_resample(X, y)
 df_resampled = pd.DataFrame(X_res, columns=independent_vars)
 #df_resampled['sentiment'] = y_res # wait
-
+df_resampled.set_index(['hike_id', 'reviewer_id'], inplace=True) # found index!
 
 ######################################
 ########Scaling for KNN###############

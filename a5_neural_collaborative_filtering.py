@@ -62,7 +62,7 @@ def split_data_and_train(df_model):
                                 np.argmax(model_ncf.predict([X_test['reviewer_id'],
                                                              X_test['hike_id']]), axis=1)))
 
-    distances, indices = model_knn.kneighbors(X_test)
+    distances, indices = model_ncf.kneighbors(X_test)
     #preds
     predicted_sentiments = []
     for idx in indices: predicted_sentiments.append(y_train.iloc[idx].mode().iloc[0])
@@ -71,7 +71,7 @@ def split_data_and_train(df_model):
     accuracy = accuracy_score(y_test, predicted_sentiments)
     print(f"Accuracy: {accuracy}")
     print(classification_report(y_test, predicted_sentiments))
-    return X_train, X_test, y_train, y_test, train_ids, test_ids, model_knn, indices
+    return X_train, X_test, y_train, y_test, train_ids, test_ids, model_ncf, indices
 
 
 def get_recommendations(test_ids, X_train, y_train, model_ncf):
@@ -103,7 +103,8 @@ if __name__ == '__main__':
     print('Start Filtering')
 
     df_model = pd.read_csv(data_out + 'model_data1_no_pca.csv')
-    df_model['hik_id'] = df_model.reset_index(drop=False, inplace=False)
+    #df_model['hik_id'] = df_model.reset_index(drop=False, inplace=False)# both should just be
+    # columsn
     X_train, X_test, y_train, y_test, train_ids, test_ids, model_ncf = split_data_and_train(
         df_model)
     get_recommendations(test_ids, X_train, y_train, model_ncf)
