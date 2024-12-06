@@ -101,3 +101,4 @@ if __name__ == '__main__':
 
 #POTETNIAL FUTURE IMPROVEMENTS: Make a time factor,where it only observes hike recommendations from
 # same time of year?
+#94% accuracy, works again!
