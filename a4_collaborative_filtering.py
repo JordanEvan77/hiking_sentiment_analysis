@@ -10,6 +10,7 @@ from Scratch.loggers import data_dir, data_out
 def split_data_and_train(df_model):
     hike_attributes = [i for i in df_model.columns if i not in ['sentiment', 'reviewer_id',
                                                                 'hike_id']]
+    df_model.reset_index(inplace=True, drop=True)
     X = df_model[hike_attributes]
     y = df_model[['sentiment']]
     reviewer_ids = df_model[['reviewer_id']]
@@ -35,7 +36,10 @@ def split_data_and_train(df_model):
     distances, indices = model_knn.kneighbors(X_test)
     #preds
     predicted_sentiments = []
-    for idx in indices: predicted_sentiments.append(y_train.loc[idx].mode().iloc[0])
+    for idx in indices:
+        neighbors_sentiments = y_train.iloc[idx]
+        most_common_sentiment = neighbors_sentiments.mode().iloc[0]
+        predicted_sentiments.append(most_common_sentiment)
 
     # Now see if the model is accurate
     accuracy = accuracy_score(y_test, predicted_sentiments)

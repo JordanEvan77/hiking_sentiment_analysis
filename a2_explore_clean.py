@@ -422,7 +422,7 @@ X_res, y_res = smote.fit_resample(X, y)
 df_resampled = pd.DataFrame(X_res, columns=independent_vars)
 #df_resampled['sentiment'] = y_res # wait
 df_resampled.set_index(['hike_id', 'reviewer_id'], inplace=True) # found index!
-
+y_res.index = df_resampled.index
 ######################################
 ########Scaling for KNN###############
 ######################################
@@ -455,10 +455,10 @@ plt.show()
 
 pca = PCA(n_components=num_components)
 df_final_pca = pd.DataFrame(pca.fit_transform(df_final))
-df_final_pca['sentiment'] = y_res
 df_final_pca.index = df_final.index
 
-df_final['sentiment'] = y_res
+df_final['sentiment'] = y_res['sentiment']
+df_final_pca['sentiment'] = y_res['sentiment']
 
 #TODO: May want to do general feature selection over dimensionality reduction? for another option
 # in model?
