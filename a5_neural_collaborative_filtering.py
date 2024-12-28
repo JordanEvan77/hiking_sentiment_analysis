@@ -120,3 +120,5 @@ if __name__ == '__main__':
 
 #POTETNIAL FUTURE IMPROVEMENTS: Make a time factor,where it only observes hike recommendations from
 # same time of year?
+#TODO: Finish this so it has accuracy, and complete a write up, discussing interpretation,
+# implementation and visualization
