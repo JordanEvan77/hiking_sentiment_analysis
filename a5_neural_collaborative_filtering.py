@@ -75,7 +75,7 @@ def split_data_and_train(df_model):
     #compile and fit, iterate. I can adjust learning rate here:
     model_ncf.compile(optimizer=Adam(learning_rate=0.0001), loss='categorical_crossentropy',
                       metrics=['accuracy'])
-    model_ncf.fit([X_train['reviewer_id'], X_train['hike_id']], y_train, epochs=20, batch_size=32,
+    model_ncf.fit([X_train['reviewer_id'], X_train['hike_id']], y_train, epochs=25, batch_size=32,
                   verbose=1)
 
     # get acc
