@@ -9,6 +9,10 @@ from tensorflow.keras.models import Model
 from tensorflow.keras.layers import Input, Embedding, Flatten, Dense, Concatenate
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.utils import to_categorical
+from tensorflow.keras.layers import Dropout
+from sklearn.preprocessing import LabelBinarizer
+
+
 
 def split_data_and_train(df_model):
     hike_attributes = [i for i in df_model.columns if i not in ['sentiment']]
@@ -28,29 +32,48 @@ def split_data_and_train(df_model):
     train_ids = train_ids.reset_index(drop=True)
     test_ids = test_ids.reset_index(drop=True)
 
+    # OHE the target for loss function:
+    lb = LabelBinarizer()
+    y_train = lb.fit_transform(y_train)
+    y_test = lb.transform(y_test)
+
     # model to get a baseline, and then make recommendations once accurate
-    #---NCF Architecture:
+    # This is a new model that I haven't used before, but I read through some tutorials.
+
+    #---NCF Architecture: NCF uses embedding layers to represent users and items as dense vectors.
     # Input Layers: User and item IDs.
     # Embedding Layers: Learn user and item representations.
     # Concatenation Layer: Combine user and item embeddings.
     # Dense Layers: Learn complex user-item interactions.
     # Output Layer: Provide predictions
 
+    #start by getting that dense vector
     user_input = Input(shape=(1,), name='user_input')
     item_input = Input(shape=(1,), name='item_input')
-    user_embedding = Embedding(input_dim=df_model['reviewer_id'].nunique(), output_dim=50,
+    user_embedding = Embedding(input_dim=df_model['reviewer_id'].nunique(), output_dim=64,
                                name='user_embedding')(user_input)
-    item_embedding = Embedding(input_dim=df_model['hike_id'].nunique(), output_dim=50,
+    item_embedding = Embedding(input_dim=df_model['hike_id'].nunique(), output_dim=64,
                                name='item_embedding')(item_input)
 
     user_vector = Flatten(name='user_vector')(user_embedding)
     item_vector = Flatten(name='item_vector')(item_embedding)
     merged = Concatenate()([user_vector, item_vector])
-    dense_1 = Dense(128, activation='relu')(merged)
-    dense_2 = Dense(64, activation='relu')(dense_1)
-    output = Dense(y_train.shape[1], activation='softmax')(dense_2)
+
+    #Then get the actual layers of the model
+    dense_1 = Dense(256, activation='relu')(merged)
+    # Use drop out layers to prevent overfitting, as initial model isn't imrpoving over epochss.
+    dropout_1 = Dropout(0.5)(dense_1)
+    dense_2 = Dense(128, activation='relu')(dropout_1)
+    dropout_2 = Dropout(0.5)(dense_2)
+    dense_3 = Dense(64, activation='relu')(dropout_2)
+
+    #combine to get final fusion dense layer
+    output = Dense(y_train.shape[1], activation='softmax')(dense_3)
+
     model_ncf = Model(inputs=[user_input, item_input], outputs=output)
-    model_ncf.compile(optimizer=Adam(learning_rate=0.001), loss='categorical_crossentropy',
+
+    #compile and fit, iterate. I can adjust learning rate here:
+    model_ncf.compile(optimizer=Adam(learning_rate=0.0001), loss='categorical_crossentropy',
                       metrics=['accuracy'])
     model_ncf.fit([X_train['reviewer_id'], X_train['hike_id']], y_train, epochs=20, batch_size=32,
                   verbose=1)

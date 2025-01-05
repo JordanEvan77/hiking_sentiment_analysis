@@ -45,6 +45,15 @@ def split_data_and_train(df_model):
     accuracy = accuracy_score(y_test, predicted_sentiments)
     print(f"Accuracy: {accuracy}")
     print(classification_report(y_test, predicted_sentiments))
+#     Accuracy: 0.9460327051625816
+#               precision    recall  f1-score   support
+#           -1       0.94      0.91      0.92      8826
+#            0       0.96      0.99      0.98      8826
+#            1       0.94      0.94      0.94      8827
+#     accuracy                           0.95     26479
+#    macro avg       0.95      0.95      0.95     26479
+# weighted avg       0.95      0.95      0.95
+
     return X_train, X_test, y_train, y_test, train_ids, test_ids, model_knn, indices
 
 
