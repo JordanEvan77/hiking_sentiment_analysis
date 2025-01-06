@@ -24,10 +24,10 @@ Process:
 -Using a standard Collaborative Filtering approach using KNN yielded good results, and with very minor tuning I arrived at 95% average accuracy and precision. Utilizing the PCA set didn't yield appreciatable performance improvement. However, for future research I could do more tuning of the PCA ,as well general feature selection to help decrease noise in the model.
 -Another potential future point of research would be to integrate the time factor. Different hikes are naturally better at different times of year, so it would be worth while to update this as a feature of the input, so as to provide more resilient recommendations. 
 
--I also spent time building and tuning a Neural Collaborative Filtering model, to see if I could get even better performance on a consistent basis, and...
+-I also spent time building and tuning a Neural Collaborative Filtering model, to see if I could get even better performance on a consistent basis, and initially was getting terrible accuracy and precision. This was a roadblock, due to the complexity of this model. It was stuck at low 30s accuracy, and I had to do some digging and research. but after adding in a drop out layer, and changing the loss to cross entropy, along with OHE the target signal, I was able to boost performance. After small tuning it was able to score above 98% accuracy, and 97% precision.
 
 Findings:
--The initial KNN model provided statisfactory results (accuracy and precision), and could be utilized for initial easy results. The PCA approach didn't yield expected increase in performance, despite having many encoded columns. The Neural Network.... There is room for future improvement, and implementation of other features. 
+-The initial KNN model provided statisfactory results (accuracy and precision), and could be utilized for initial easy results. The PCA approach didn't yield expected increase in performance, despite having many encoded columns. The Neural Network shows a more scalable model, that will handle larger inputs and new features more readily than KNN due to computation methodology. There is room for future improvement, and implementation of other features. 
 
 
 Potential Application:
@@ -37,5 +37,5 @@ Potential Application:
 
 
 Learning:
--I learned a lot from this project, about how to do more complex web scraping and sentiment analysis, to utilizing a new Neural Network. I hope this project demonstrates my ability to problem solve, and overcome unanticipated challenges. As well, it shows an overlap of my passions, data science and the outdoors, as a creative way for me to portray my self starter attitude, and natural creativity when it comes to coding. 
+-I learned a lot from this project, about how to do more complex web scraping and sentiment analysis, to utilizing a new Neural Network. I hope this project demonstrates my ability to problem solve, and overcome unanticipated challenges. As well, it shows an overlap of my passions, data science and the outdoors, as a creative way for me to portray my self starter attitude, and natural curiousity when it comes to coding. 
 
