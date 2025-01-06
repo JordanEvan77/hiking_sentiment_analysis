@@ -12,7 +12,7 @@ from tensorflow.keras.utils import to_categorical
 from tensorflow.keras.layers import Dropout
 from sklearn.preprocessing import LabelBinarizer
 from keras.callbacks import EarlyStopping, ReduceLROnPlateau
-from keras.regularizers import l2
+from keras.regularizers import l2, l1
 
 def split_data_and_train(df_model):
     hike_attributes = [i for i in df_model.columns if i not in ['sentiment']]
@@ -59,23 +59,23 @@ def split_data_and_train(df_model):
     item_vector = Flatten(name='item_vector')(item_embedding)
     merged = Concatenate()([user_vector, item_vector])
 
-
-
+    from keras.layers import LeakyReLU
     #Then get the actual layers of the model
-    dense_1 = Dense(64, activation='relu')(merged) #kernel_regularizer=l2(0.01)
     # Use drop out layers to prevent overfitting, as initial model isn't imrpoving over epochss.
-    dropout_1 = Dropout(0.6)(dense_1)
+    dense_1 = Dense(32, activation='relu', kernel_regularizer=l2(0.005))(merged)
+    dropout_1 = Dropout(0.5)(dense_1)
 
 
-    dense_2 = Dense(32, activation='relu')(dropout_1) # kernel_regularizer=l2(0.01)
-    dropout_2 = Dropout(0.6)(dense_2)
+    # dense_2 = Dense(32, activation='tanh', kernel_regularizer=l2(0.002))(dropout_1) #
+    # # kernel_regularizer=l2(0.01)
+    # dropout_2 = Dropout(0.6)(dense_2)
 
 
     # dense_3 = Dense(64, activation='relu', kernel_regularizer=l2(0.01))(dropout_2)
     # dropout_3 = Dropout(0.6)(dense_3)
 
     #combine to get final fusion dense layer
-    output = Dense(y_train.shape[1], activation='softmax')(dropout_2)
+    output = Dense(y_train.shape[1], activation='softmax')(dropout_1)
 
     model_ncf = Model(inputs=[user_input, item_input], outputs=output)
 
