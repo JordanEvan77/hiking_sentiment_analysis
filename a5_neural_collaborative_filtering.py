@@ -11,7 +11,7 @@ from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.utils import to_categorical
 from tensorflow.keras.layers import Dropout
 from sklearn.preprocessing import LabelBinarizer
-from keras.callbacks import EarlyStopping
+from keras.callbacks import EarlyStopping, ReduceLROnPlateau
 from keras.regularizers import l2
 
 def split_data_and_train(df_model):
@@ -50,36 +50,46 @@ def split_data_and_train(df_model):
     #start by getting that dense vector
     user_input = Input(shape=(1,), name='user_input')
     item_input = Input(shape=(1,), name='item_input')
-    user_embedding = Embedding(input_dim=df_model['reviewer_id'].nunique(), output_dim=64,
+    user_embedding = Embedding(input_dim=df_model['reviewer_id'].nunique(), output_dim=16,
                                name='user_embedding')(user_input)
-    item_embedding = Embedding(input_dim=df_model['hike_id'].nunique(), output_dim=64,
+    item_embedding = Embedding(input_dim=df_model['hike_id'].nunique(), output_dim=16,
                                name='item_embedding')(item_input)
 
     user_vector = Flatten(name='user_vector')(user_embedding)
     item_vector = Flatten(name='item_vector')(item_embedding)
     merged = Concatenate()([user_vector, item_vector])
 
+
+
     #Then get the actual layers of the model
-    dense_1 = Dense(256, activation='relu')(merged)
+    dense_1 = Dense(64, activation='relu')(merged) #kernel_regularizer=l2(0.01)
     # Use drop out layers to prevent overfitting, as initial model isn't imrpoving over epochss.
-    dropout_1 = Dropout(0.5)(dense_1)
-    dense_2 = Dense(128, activation='relu', kernel_regularizer=l2(0.01))(dropout_1)
-    #kernel_regularizer=l2(0.01)
+    dropout_1 = Dropout(0.6)(dense_1)
+
+
+    dense_2 = Dense(32, activation='relu')(dropout_1) # kernel_regularizer=l2(0.01)
     dropout_2 = Dropout(0.6)(dense_2)
-    dense_3 = Dense(64, activation='relu', kernel_regularizer=l2(0.01))(dropout_2)
-    dropout_3 = Dropout(0.6)(dense_3)
+
+
+    # dense_3 = Dense(64, activation='relu', kernel_regularizer=l2(0.01))(dropout_2)
+    # dropout_3 = Dropout(0.6)(dense_3)
 
     #combine to get final fusion dense layer
-    output = Dense(y_train.shape[1], activation='softmax')(dropout_3)
+    output = Dense(y_train.shape[1], activation='softmax')(dropout_2)
 
     model_ncf = Model(inputs=[user_input, item_input], outputs=output)
 
     #compile and fit, iterate, but early stop for overfitt. I can adjust learning rate here:
-    model_ncf.compile(optimizer=Adam(learning_rate=0.001), loss='categorical_crossentropy',
+    model_ncf.compile(optimizer=Adam(learning_rate=0.0005), loss='categorical_crossentropy',
                       metrics=['accuracy'])
+
+
     early_stopping = EarlyStopping(monitor='val_loss', patience=5)
+    # also lower learning rate to help with performance getting stuck:
+    reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.2, patience=2, min_lr=0.00001)
     model_ncf.fit([X_train['reviewer_id'], X_train['hike_id']], y_train, epochs=30, batch_size=32,
-                  validation_split=0.2, callbacks=[early_stopping], verbose=1)
+                  validation_split=0.2, callbacks=[early_stopping, reduce_lr], verbose=1)
+
 
     # get acc
     scores = model_ncf.evaluate([X_test['reviewer_id'], X_test['hike_id']], y_test, verbose=0)
