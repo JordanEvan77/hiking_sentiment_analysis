@@ -76,7 +76,7 @@ def split_data_and_train(df_model):
     model_ncf.compile(optimizer=Adam(learning_rate=0.0001), loss='categorical_crossentropy',
                       metrics=['accuracy'])
     model_ncf.fit([X_train['reviewer_id'], X_train['hike_id']], y_train, epochs=25, batch_size=32,
-                  verbose=1)
+                  verbose=1)#
 
     # get acc
     scores = model_ncf.evaluate([X_test['reviewer_id'], X_test['hike_id']], y_test, verbose=0)
