@@ -13,6 +13,7 @@ from tensorflow.keras.layers import Dropout
 from sklearn.preprocessing import LabelBinarizer
 from keras.callbacks import EarlyStopping, ReduceLROnPlateau
 from keras.regularizers import l2, l1
+from keras.layers import BatchNormalization
 
 def split_data_and_train(df_model):
     hike_attributes = [i for i in df_model.columns if i not in ['sentiment']]
@@ -62,8 +63,9 @@ def split_data_and_train(df_model):
     from keras.layers import LeakyReLU
     #Then get the actual layers of the model
     # Use drop out layers to prevent overfitting, as initial model isn't imrpoving over epochss.
-    dense_1 = Dense(32, activation='relu', kernel_regularizer=l2(0.07))(merged)
-    dropout_1 = Dropout(0.6)(dense_1)
+    dense_1 = Dense(16, activation='relu', kernel_regularizer=l2(0.02))(merged)
+    batch_norm_1 = BatchNormalization()(dense_1)
+    dropout_1 = Dropout(0.6)(batch_norm_1)
 
 
     # dense_2 = Dense(32, activation='tanh', kernel_regularizer=l2(0.002))(dropout_1) #
@@ -80,7 +82,7 @@ def split_data_and_train(df_model):
     model_ncf = Model(inputs=[user_input, item_input], outputs=output)
 
     #compile and fit, iterate, but early stop for overfitt. I can adjust learning rate here:
-    model_ncf.compile(optimizer=Adam(learning_rate=0.0005), loss='categorical_crossentropy',
+    model_ncf.compile(optimizer=Adam(learning_rate=0.0001), loss='categorical_crossentropy',
                       metrics=['accuracy'])
 
 
