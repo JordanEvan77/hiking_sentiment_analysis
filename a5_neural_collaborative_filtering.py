@@ -62,8 +62,8 @@ def split_data_and_train(df_model):
     from keras.layers import LeakyReLU
     #Then get the actual layers of the model
     # Use drop out layers to prevent overfitting, as initial model isn't imrpoving over epochss.
-    dense_1 = Dense(32, activation='relu', kernel_regularizer=l2(0.005))(merged)
-    dropout_1 = Dropout(0.5)(dense_1)
+    dense_1 = Dense(32, activation='relu', kernel_regularizer=l2(0.07))(merged)
+    dropout_1 = Dropout(0.6)(dense_1)
 
 
     # dense_2 = Dense(32, activation='tanh', kernel_regularizer=l2(0.002))(dropout_1) #
