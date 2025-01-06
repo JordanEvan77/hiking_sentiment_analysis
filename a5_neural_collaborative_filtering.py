@@ -11,8 +11,8 @@ from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.utils import to_categorical
 from tensorflow.keras.layers import Dropout
 from sklearn.preprocessing import LabelBinarizer
-
-
+from keras.callbacks import EarlyStopping
+from keras.regularizers import l2
 
 def split_data_and_train(df_model):
     hike_attributes = [i for i in df_model.columns if i not in ['sentiment']]
@@ -63,20 +63,23 @@ def split_data_and_train(df_model):
     dense_1 = Dense(256, activation='relu')(merged)
     # Use drop out layers to prevent overfitting, as initial model isn't imrpoving over epochss.
     dropout_1 = Dropout(0.5)(dense_1)
-    dense_2 = Dense(128, activation='relu')(dropout_1)
-    dropout_2 = Dropout(0.5)(dense_2)
-    dense_3 = Dense(64, activation='relu')(dropout_2)
+    dense_2 = Dense(128, activation='relu', kernel_regularizer=l2(0.01))(dropout_1)
+    #kernel_regularizer=l2(0.01)
+    dropout_2 = Dropout(0.6)(dense_2)
+    dense_3 = Dense(64, activation='relu', kernel_regularizer=l2(0.01))(dropout_2)
+    dropout_3 = Dropout(0.6)(dense_3)
 
     #combine to get final fusion dense layer
-    output = Dense(y_train.shape[1], activation='softmax')(dense_3)
+    output = Dense(y_train.shape[1], activation='softmax')(dropout_3)
 
     model_ncf = Model(inputs=[user_input, item_input], outputs=output)
 
-    #compile and fit, iterate. I can adjust learning rate here:
-    model_ncf.compile(optimizer=Adam(learning_rate=0.0001), loss='categorical_crossentropy',
+    #compile and fit, iterate, but early stop for overfitt. I can adjust learning rate here:
+    model_ncf.compile(optimizer=Adam(learning_rate=0.001), loss='categorical_crossentropy',
                       metrics=['accuracy'])
-    model_ncf.fit([X_train['reviewer_id'], X_train['hike_id']], y_train, epochs=25, batch_size=32,
-                  verbose=1)#
+    early_stopping = EarlyStopping(monitor='val_loss', patience=5)
+    model_ncf.fit([X_train['reviewer_id'], X_train['hike_id']], y_train, epochs=30, batch_size=32,
+                  validation_split=0.2, callbacks=[early_stopping], verbose=1)
 
     # get acc
     scores = model_ncf.evaluate([X_test['reviewer_id'], X_test['hike_id']], y_test, verbose=0)
@@ -85,16 +88,7 @@ def split_data_and_train(df_model):
                                 np.argmax(model_ncf.predict([X_test['reviewer_id'],
                                                              X_test['hike_id']]), axis=1)))
 
-    distances, indices = model_ncf.kneighbors(X_test)
-    #preds
-    predicted_sentiments = []
-    for idx in indices: predicted_sentiments.append(y_train.iloc[idx].mode().iloc[0])
-
-    # Now see if the model is accurate
-    accuracy = accuracy_score(y_test, predicted_sentiments)
-    print(f"Accuracy: {accuracy}")
-    print(classification_report(y_test, predicted_sentiments))
-    return X_train, X_test, y_train, y_test, train_ids, test_ids, model_ncf, indices
+    return X_train, X_test, y_train, y_test, train_ids, test_ids, model_ncf
 
 
 def get_recommendations(test_ids, X_train, y_train, model_ncf):
