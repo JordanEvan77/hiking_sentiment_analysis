@@ -66,13 +66,12 @@ def split_data_and_train(df_model):
     # Use drop out layers to prevent overfitting, as initial model isn't imrpoving over epochss.
        # Dense layers
     dense1 = Dense(128, activation='relu')(merged)
-    #add batch normalization
-    batch_norm1 = BatchNormalization()(dense1)
+    dropout1 = Dropout(0.5)(dense1)
 
-    dense2 = Dense(64, activation='relu')(batch_norm1)
-    batch_norm2 = BatchNormalization()(dense2)
+    dense2 = Dense(64, activation='relu')(dropout1)
+    dropout2 = Dropout(0.5)(dense2)
 
-    output = Dense(3, activation='softmax')(batch_norm2)  # corrected to3 classes: -1, 0, 1
+    output = Dense(3, activation='softmax')(dropout2)  # corrected to3 classes: -1, 0, 1
 
     model_ncf = Model(inputs=[user_input, item_input], outputs=output)
     model_ncf.compile(optimizer=Adam(learning_rate=0.001), loss='sparse_categorical_crossentropy',
