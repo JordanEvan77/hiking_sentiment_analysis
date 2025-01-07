@@ -18,6 +18,7 @@ from keras.layers import BatchNormalization
 def split_data_and_train(df_model):
     hike_attributes = [i for i in df_model.columns if i not in ['sentiment']]
     X = df_model[hike_attributes]
+    df_model['sentiment'] = df_model['sentiment'] + 1 #adjust to make it in range for model
     y = df_model[['sentiment']]
     reviewer_ids = df_model[['reviewer_id']]
 
@@ -34,9 +35,9 @@ def split_data_and_train(df_model):
     test_ids = test_ids.reset_index(drop=True)
 
     # OHE the target for loss function:
-    lb = LabelBinarizer()
-    y_train = lb.fit_transform(y_train)
-    y_test = lb.transform(y_test)
+    # lb = LabelBinarizer()
+    # y_train = lb.fit_transform(y_train)
+    # y_test = lb.transform(y_test)
 
     # model to get a baseline, and then make recommendations once accurate
     # This is a new model that I haven't used before, but I read through some tutorials.
@@ -63,34 +64,25 @@ def split_data_and_train(df_model):
     from keras.layers import LeakyReLU
     #Then get the actual layers of the model
     # Use drop out layers to prevent overfitting, as initial model isn't imrpoving over epochss.
-    dense_1 = Dense(16, activation='relu', kernel_regularizer=l2(0.02))(merged)
-    batch_norm_1 = BatchNormalization()(dense_1)
-    dropout_1 = Dropout(0.6)(batch_norm_1)
+       # Dense layers
+    dense1 = Dense(128, activation='relu')(merged)
+    #add batch normalization
+    batch_norm1 = BatchNormalization()(dense1)
 
+    dense2 = Dense(64, activation='relu')(batch_norm1)
+    batch_norm2 = BatchNormalization()(dense2)
 
-    # dense_2 = Dense(32, activation='tanh', kernel_regularizer=l2(0.002))(dropout_1) #
-    # # kernel_regularizer=l2(0.01)
-    # dropout_2 = Dropout(0.6)(dense_2)
-
-
-    # dense_3 = Dense(64, activation='relu', kernel_regularizer=l2(0.01))(dropout_2)
-    # dropout_3 = Dropout(0.6)(dense_3)
-
-    #combine to get final fusion dense layer
-    output = Dense(y_train.shape[1], activation='softmax')(dropout_1)
+    output = Dense(3, activation='softmax')(batch_norm2)  # corrected to3 classes: -1, 0, 1
 
     model_ncf = Model(inputs=[user_input, item_input], outputs=output)
-
-    #compile and fit, iterate, but early stop for overfitt. I can adjust learning rate here:
-    model_ncf.compile(optimizer=Adam(learning_rate=0.0001), loss='categorical_crossentropy',
-                      metrics=['accuracy'])
-
-
-    early_stopping = EarlyStopping(monitor='val_loss', patience=5)
-    # also lower learning rate to help with performance getting stuck:
-    reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.2, patience=2, min_lr=0.00001)
+    model_ncf.compile(optimizer=Adam(learning_rate=0.001), loss='sparse_categorical_crossentropy',
+                  metrics=['accuracy'])
+    #
+    # early_stopping = EarlyStopping(monitor='val_loss', patience=5)
+    # # also lower learning rate to help with performance getting stuck:
+    # reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.2, patience=2, min_lr=0.00001)
     model_ncf.fit([X_train['reviewer_id'], X_train['hike_id']], y_train, epochs=30, batch_size=32,
-                  validation_split=0.2, callbacks=[early_stopping, reduce_lr], verbose=1)
+                  validation_split=0.2, verbose=1) #callbacks=[early_stopping, reduce_lr]
 
 
     # get acc
