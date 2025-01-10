@@ -16,8 +16,10 @@ from keras.regularizers import l2, l1
 from keras.layers import BatchNormalization
 
 def split_data_and_train(df_model):
-    hike_attributes = [i for i in df_model.columns if i not in ['sentiment']]
-    X = df_model[hike_attributes]
+    hike_attributes = [i for i in df_model.columns if i not in ['sentiment', 'hike_id',
+                                                                'reviewer_id']]
+    id_attributes = ['hike_id', 'reviewer_id']
+    X = df_model[hike_attributes+id_attributes]
     df_model['sentiment'] = df_model['sentiment'] + 1 #adjust to make it in range for model
     y = df_model[['sentiment']]
     reviewer_ids = df_model[['reviewer_id']]
@@ -52,6 +54,8 @@ def split_data_and_train(df_model):
     #start by getting that dense vector
     user_input = Input(shape=(1,), name='user_input')
     item_input = Input(shape=(1,), name='item_input')
+    hike_info_input = Input(shape=(len(hike_attributes,)))
+
     user_embedding = Embedding(input_dim=df_model['reviewer_id'].nunique(), output_dim=16,
                                name='user_embedding')(user_input)
     item_embedding = Embedding(input_dim=df_model['hike_id'].nunique(), output_dim=16,
@@ -59,13 +63,15 @@ def split_data_and_train(df_model):
 
     user_vector = Flatten(name='user_vector')(user_embedding)
     item_vector = Flatten(name='item_vector')(item_embedding)
-    merged = Concatenate()([user_vector, item_vector])
 
-    from keras.layers import LeakyReLU
+    merged = Concatenate()([user_vector, item_vector])
+    merged_with_info = Concatenate()([merged, hike_info_input])
+
+
     #Then get the actual layers of the model
     # Use drop out layers to prevent overfitting, as initial model isn't imrpoving over epochss.
        # Dense layers
-    dense1 = Dense(128, activation='relu')(merged)
+    dense1 = Dense(128, activation='relu')(merged_with_info)
     dropout1 = Dropout(0.5)(dense1)
 
     dense2 = Dense(64, activation='relu')(dropout1)
@@ -73,15 +79,16 @@ def split_data_and_train(df_model):
 
     output = Dense(3, activation='softmax')(dropout2)  # corrected to3 classes: -1, 0, 1
 
-    model_ncf = Model(inputs=[user_input, item_input], outputs=output)
+    model_ncf = Model(inputs=[user_input, item_input, hike_info_input], outputs=output)
     model_ncf.compile(optimizer=Adam(learning_rate=0.001), loss='sparse_categorical_crossentropy',
-                  metrics=['accuracy'])
+                      metrics=['accuracy'])
     #
     # early_stopping = EarlyStopping(monitor='val_loss', patience=5)
     # # also lower learning rate to help with performance getting stuck:
     # reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.2, patience=2, min_lr=0.00001)
-    model_ncf.fit([X_train['reviewer_id'], X_train['hike_id']], y_train, epochs=30, batch_size=32,
-                  validation_split=0.2, verbose=1) #callbacks=[early_stopping, reduce_lr]
+    model_ncf.fit([X_train['reviewer_id'], X_train['hike_id'], X_train[hike_attributes]], y_train, epochs=30,
+                  batch_size=32,
+                  validation_split=0.2, verbose=1)  # callbacks=[early_stopping, reduce_lr]
 
 
     # get acc
