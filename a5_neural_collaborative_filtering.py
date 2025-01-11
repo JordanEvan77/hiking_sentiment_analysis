@@ -76,15 +76,15 @@ def split_data_and_train(df_model):
 
     dense2 = Dense(64, activation='relu')(merged_with_info)
     batch_norm2 = BatchNormalization()(dense2)
-    #dropout2 = Dropout(0.5)(dense2)
+    dropout2 = Dropout(0.5)(batch_norm2)
 
-    output = Dense(3, activation='softmax')(batch_norm2)  # corrected to3 classes:0,1,2
+    output = Dense(3, activation='softmax')(dropout2)  # corrected to3 classes:0,1,2
 
     model_ncf = Model(inputs=[user_input, item_input, hike_info_input], outputs=output)
     model_ncf.compile(optimizer=Adam(learning_rate=0.0001), loss='sparse_categorical_crossentropy',
                       metrics=['accuracy'])
     #
-    early_stopping = EarlyStopping(monitor='val_loss', patience=5)
+    early_stopping = EarlyStopping(monitor='val_loss', patience=6)
     # # also lower learning rate to help with performance getting stuck:
     reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.2, patience=2, min_lr=0.00001)
     model_ncf.fit([X_train['reviewer_id'], X_train['hike_id'], X_train[hike_attributes]], y_train, epochs=30,
