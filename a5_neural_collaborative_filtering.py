@@ -71,10 +71,11 @@ def split_data_and_train(df_model):
     #Then get the actual layers of the model
     # Use drop out layers to prevent overfitting, as initial model isn't imrpoving over epochss.
        # Dense layers
-    # dense1 = Dense(128, activation='relu')(merged_with_info)
-    # dropout1 = Dropout(0.5)(dense1)
+    dense1 = Dense(128, activation='relu')(merged_with_info)
+    batch_norm2 = BatchNormalization()(dense1)
+    dropout1 = Dropout(0.5)(batch_norm2)
 
-    dense2 = Dense(64, activation='relu')(merged_with_info)
+    dense2 = Dense(64, activation='relu')(dropout1)
     batch_norm2 = BatchNormalization()(dense2)
     dropout2 = Dropout(0.5)(batch_norm2)
 
@@ -95,7 +96,7 @@ def split_data_and_train(df_model):
     # get acc
     scores = model_ncf.evaluate([X_test['reviewer_id'], X_test['hike_id'],
                                  X_test[hike_attributes]], y_test, verbose=0)
-    print(f"Accuracy: {scores[1]}")
+    print(f"Test Accuracy: {scores[1]}")
     print(classification_report(np.argmax(y_test, axis=1),
                                 np.argmax(model_ncf.predict([X_test['reviewer_id'],
                                                              X_test['hike_id'],
