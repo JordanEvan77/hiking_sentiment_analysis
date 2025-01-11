@@ -6,7 +6,7 @@ from sklearn.neighbors import NearestNeighbors
 from sklearn.metrics import accuracy_score, classification_report
 from Scratch.loggers import data_dir, data_out
 from tensorflow.keras.models import Model
-from tensorflow.keras.layers import Input, Embedding, Flatten, Dense, Concatenate
+from tensorflow.keras.layers import Input, Embedding, Flatten, Dense, Concatenate, Add
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.utils import to_categorical
 from tensorflow.keras.layers import Dropout
@@ -79,7 +79,13 @@ def split_data_and_train(df_model):
     batch_norm2 = BatchNormalization()(dense2)
     dropout2 = Dropout(0.5)(batch_norm2)
 
-    output = Dense(3, activation='softmax')(dropout2)  # corrected to3 classes:0,1,2
+    dense3 = Dense(64, activation='relu')(dropout2)
+    batch_norm3 = BatchNormalization()(dense3)
+    dropout3 = Dropout(0.5)(batch_norm3)
+
+    residual = Add()([dropout3, dropout2])
+
+    output = Dense(3, activation='softmax')(residual)  # corrected to3 classes:0,1,2
 
     model_ncf = Model(inputs=[user_input, item_input, hike_info_input], outputs=output)
     model_ncf.compile(optimizer=Adam(learning_rate=0.0001), loss='sparse_categorical_crossentropy',
