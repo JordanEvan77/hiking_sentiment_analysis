@@ -1,22 +1,25 @@
+import ast
+import sklearn
 import pandas as pd
 import numpy as np
-import sklearn
+import seaborn as sns
 import missingno as msno
 import matplotlib.pyplot as plt
 from sklearn.impute import KNNImputer
 from sklearn.decomposition import PCA
-from sklearn.preprocessing import LabelEncoder, StandardScaler
-import seaborn as sns
+from imblearn.over_sampling import SMOTE
 from Scratch.loggers import data_dir, data_out
+from sklearn.preprocessing import LabelEncoder, StandardScaler
 from hiking_sentiment_analysis.a3_sentiment_analysis import run_sentiment_check
-import ast
-from sklearn.preprocessing import StandardScaler
-
 plt.ion()
 
-#Read in the data
 
 def initial_checks(df):
+    '''
+    A function for exploratory data analysis
+    :param df:
+    :return:
+    '''
     for i in df.columns: print(df[i].head()) # 15 columns most categorical
 
     cat_cols = ['Key Features', 'Difficulty', 'Report Text', 'Region', 'Road', 'Bugs', 'Snow',
@@ -74,7 +77,7 @@ def initial_checks(df):
 
 def trim_text_clean_numeric(df):
     '''
-
+    A funciton that handles a lot of manual string parsing
     :param df: Raw df uncleaned with messy strings
     :return: data frame with parsed columns
     '''
@@ -267,12 +270,23 @@ def fix_key_features(df):
 
 
 def split_region(i):
+    '''
+    another simple string split function
+    :param i:
+    :return:
+    '''
     if '>' in str(i):
         return str(i).split(' > ')
     else:
         return [str(i), None]
 
+
 def split_condition(i):
+    '''
+    simple string split function
+    :param i:
+    :return:
+    '''
     if ':' in str(i):
         return str(i).split(':')
     else:
@@ -281,6 +295,11 @@ def split_condition(i):
 
 
 def encode_cate_cols(df_2):
+    '''
+    Individually encodes specific categorical columns
+    :param df_2:
+    :return:
+    '''
     reviewer_encoder = LabelEncoder()
     df_2['reviewer_id'] = reviewer_encoder.fit_transform(df_2['Trail Report By'])
     df_2['hike_id'] = reviewer_encoder.fit_transform(df_2['Hike Name'])
@@ -299,9 +318,15 @@ def encode_cate_cols(df_2):
     return df_2
 
 
-
 # ['Month', 'Day', 'Year' 'Rating', 'Highest Point', 'Elevation']
 def drop_outliers(df, num_cols, threshold=1.5):
+    '''
+    A standardized helper function for dropping outliers
+    :param df: dataframe with outliers
+    :param num_cols: columns to check
+    :param threshold: the iqr severity used
+    :return: dataframe without outliers
+    '''
     df_cleaned = df.copy()
     total_rows_lost = 0
     for col in num_cols:
@@ -326,7 +351,6 @@ def drop_outliers(df, num_cols, threshold=1.5):
     return df_cleaned
 
 
-
 def impute_and_drop(df_3, num_cols):
     '''
     find count of missing values and impute with median
@@ -349,7 +373,6 @@ def balance_classes(df_3):
     :param df_3: previously cleaned df
     :return: df_resampled: X variables that are aligned with rebalance and y_res which is aligned with rebalance
     '''
-    from imblearn.over_sampling import SMOTE
     smote = SMOTE(random_state=22) # I believe the minority class has a reasonable representation,
     # I just want more of them
     df_3.reset_index(inplace=True, drop=False)
@@ -468,7 +491,7 @@ if __name__ == '__main__':
     # 'Hike Name' as index??? sentiment analysis and this should run
 
     #necessary encoding
-    encode_cate_cols(df_2)
+    df_2 = encode_cate_cols(df_2)
 
 
     # Impute Categorical
@@ -484,7 +507,7 @@ if __name__ == '__main__':
 
 
     #impute nuermic cols now, different approach and dupes
-    impute_and_drop(df_3, num_cols)
+    df_3 = impute_and_drop(df_3, num_cols)
 
 
     # do outliers:

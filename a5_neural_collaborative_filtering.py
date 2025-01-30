@@ -15,7 +15,7 @@ from keras.callbacks import EarlyStopping, ReduceLROnPlateau
 from keras.regularizers import l2, l1
 from keras.layers import BatchNormalization
 
-def split_data_and_train(df_model):
+def split_data_and_format(df_model):
     hike_attributes = [i for i in df_model.columns if i not in ['sentiment', 'hike_id',
                                                                 'reviewer_id']]
     id_attributes = ['hike_id', 'reviewer_id']
@@ -45,11 +45,11 @@ def split_data_and_train(df_model):
     # This is a new model that I haven't used before, but I read through some tutorials.
 
     #---NCF Architecture: NCF uses embedding layers to represent users and items as dense vectors.
-    # Input Layers: User and item IDs.
-    # Embedding Layers: Learn user and item representations.
-    # Concatenation Layer: Combine user and item embeddings.
-    # Dense Layers: Learn complex user-item interactions.
-    # Output Layer: Provide predictions
+    # Input Layers: user and item IDs.
+    # Embedding Layers: learn user and item representations.
+    # Concatenation layer: Combine user and item embeddings.
+    # Dense Layers: elarn complex user-item interactions.
+    # Output Layer: provide predictions
 
     #start by getting that dense vector
     user_input = Input(shape=(1,), name='user_input')
@@ -67,7 +67,13 @@ def split_data_and_train(df_model):
     merged = Concatenate()([user_vector, item_vector])
     merged_with_info = Concatenate()([merged, hike_info_input])
 
+    return X_train, X_test, y_train, y_test, train_ids, test_ids, merged_with_info, user_input,\
+           item_input, hike_info_input
 
+
+
+def model_build_and_test(X_train, X_test, y_train, y_test, train_ids, test_ids, merged_with_info,
+                         user_input, item_input, hike_info_input):
     #Then get the actual layers of the model
     # Use drop out layers to prevent overfitting, as initial model isn't imrpoving over epochss.
        # Dense layers
@@ -98,7 +104,6 @@ def split_data_and_train(df_model):
                   batch_size=32,
                   validation_split=0.2, verbose=1, callbacks=[early_stopping, reduce_lr])
 
-
     # get acc
     scores = model_ncf.evaluate([X_test['reviewer_id'], X_test['hike_id'],
                                  X_test[hike_attributes]], y_test, verbose=0)
@@ -107,8 +112,8 @@ def split_data_and_train(df_model):
                                 np.argmax(model_ncf.predict([X_test['reviewer_id'],
                                                              X_test['hike_id'],
                                                              X_test[hike_attributes]]), axis=1)))
+    return model_ncf, hike_attributes
 
-    return X_train, X_test, y_train, y_test, train_ids, test_ids, model_ncf, hike_attributes
 
 
 def get_recommendations(test_ids, X_train, y_train, model_ncf, hike_attributes):
@@ -145,17 +150,26 @@ if __name__ == '__main__':
     df_model = pd.read_csv(data_out + 'model_data1_no_pca.csv')
     #df_model['hik_id'] = df_model.reset_index(drop=False, inplace=False)# both should just be
     # columsn
-    X_train, X_test, y_train, y_test, train_ids, test_ids, model_ncf, hike_attributes = \
-        split_data_and_train(df_model)
+    X_train, X_test, y_train, y_test, train_ids, test_ids, merged_with_info, user_input, \
+    item_input, hike_info_input = split_data_and_format(df_model)
+
+    model_ncf, hike_attributes = model_build_and_test(X_train, X_test, y_train, y_test, train_ids,
+                    test_ids, merged_with_info, user_input, item_input, hike_info_input)
+
     get_recommendations(test_ids, X_train, y_train, model_ncf, hike_attributes)
+
 
     # PCA
     print('NOW WITH PCA')
     df_model_pca = pd.read_csv(data_out + 'model_data1_pca.csv')
-    X_train, X_test, y_train, y_test, train_ids, test_ids, model_ncf, hike_attributes =\
-        split_data_and_train(df_model_pca)
-    get_recommendations(test_ids, X_train, y_train, model_ncf, hike_attributes)
 
+    X_train, X_test, y_train, y_test, train_ids, test_ids, merged_with_info, user_input, \
+    item_input, hike_info_input = split_data_and_format(df_model_pca)
+
+    model_ncf, hike_attributes = model_build_and_test(X_train, X_test, y_train, y_test, train_ids,
+                        test_ids, merged_with_info, user_input, item_input, hike_info_input)
+
+    get_recommendations(test_ids, X_train, y_train, model_ncf, hike_attributes)
 
 
 #POTETNIAL FUTURE IMPROVEMENTS: Make a time factor,where it only observes hike recommendations from
