@@ -8,102 +8,104 @@ from sklearn.decomposition import PCA
 from sklearn.preprocessing import LabelEncoder, StandardScaler
 import seaborn as sns
 from Scratch.loggers import data_dir, data_out
+from hiking_sentiment_analysis.a3_sentiment_analysis import run_sentiment_check
 import ast
+from sklearn.preprocessing import StandardScaler
 
 plt.ion()
 
 #Read in the data
 
-df_raw = pd.read_csv(data_dir + 'hiking_reports_64.csv')
-df = df_raw.copy() # not too big to hold a copy in memory
+def initial_checks(df):
+    for i in df.columns: print(df[i].head()) # 15 columns most categorical
 
-#####################################
-###########Initial Checks############
-#####################################
+    cat_cols = ['Key Features', 'Difficulty', 'Report Text', 'Region', 'Road', 'Bugs', 'Snow',
+                'Type of Hike', 'Trail Conditions']
+    id_cols = ['Hike Name', 'Trail Report By']
+    num_cols = ['Date', 'Rating', 'Highest Point', 'Elevation'] # date, float, int, int
+    # Note: Rating is on the hike overall, which is separate from trail reports, so each report doesn't
+    # have an attached rating, hence the need for sentiment analysis
+    temp = df.describe()
 
+    #check categorical:
+    df_cat= pd.DataFrame(columns=['Column', 'Num Categories', 'Category Counts'])
 
-for i in df.columns: print(df[i].head()) # 15 columns most categorical
+    for col in cat_cols:
+        num_categories = df[col].nunique()
+        category_counts = df[col].value_counts().to_dict()
+        null_count_pct = df[col].isnull().sum() / len(df) * 100
+        new_row = pd.DataFrame({
+            'Column': [col],
+            'Num Categories': [num_categories],
+            'Category Counts': [category_counts],
+            'Null Count (%)': [null_count_pct]
+        })
+        df_cat = pd.concat([df_cat, new_row], ignore_index=True)
+    #Looks like a couple will be ranked an need LE 6: 'Difficulty', 'Road', 'Bugs', 'Snow',
+        # 'Trail Conditions', 'Key Features' # too many categoricals, may simplify with sentiment?
 
-cat_cols = ['Key Features', 'Difficulty', 'Report Text', 'Region', 'Road', 'Bugs', 'Snow',
-            'Type of Hike', 'Trail Conditions']
-id_cols = ['Hike Name', 'Trail Report By']
-num_cols = ['Date', 'Rating', 'Highest Point', 'Elevation'] # date, float, int, int
-# Note: Rating is on the hike overall, which is separate from trail reports, so each report doesn't
-# have an attached rating, hence the need for sentiment analysis
-temp = df.describe()
+    # Some are unranked and will need OHE 2: 'Region', 'Type of Hike'
 
-#check categorical:
-df_cat= pd.DataFrame(columns=['Column', 'Num Categories', 'Category Counts'])
+    # Sentiment 1: 'Report Text'
 
-for col in cat_cols:
-    num_categories = df[col].nunique()
-    category_counts = df[col].value_counts().to_dict()
-    null_count_pct = df[col].isnull().sum() / len(df) * 100
-    new_row = pd.DataFrame({
-        'Column': [col],
-        'Num Categories': [num_categories],
-        'Category Counts': [category_counts],
-        'Null Count (%)': [null_count_pct]
-    })
-    df_cat = pd.concat([df_cat, new_row], ignore_index=True)
-#Looks like a couple will be ranked an need LE 6: 'Difficulty', 'Road', 'Bugs', 'Snow',
-    # 'Trail Conditions', 'Key Features' # too many categoricals, may simplify with sentiment?
+    # ID columns: 'Hike Name', 'Trail Report By', will be encoded as ID.
 
-# Some are unranked and will need OHE 2: 'Region', 'Type of Hike'
+    # Check Numeric
+    df_num = pd.DataFrame(columns=['Column', 'Null Count (%)', 'Outliers (%)'])
 
-# Sentiment 1: 'Report Text'
+    for col in num_cols:
+        null_count_pct = df[col].isnull().sum() / len(df) * 100
+        Q1 = df[col].quantile(0.25)
+        Q3 = df[col].quantile(0.75)
+        IQR = Q3 - Q1
+        lower_bound = Q1 - 1.5 * IQR
+        upper_bound = Q3 + 1.5 * IQR
+        outliers_pct = ((df[col] < lower_bound) | (df[col] > upper_bound)).sum() / len(df) * 100
 
-# ID columns: 'Hike Name', 'Trail Report By', will be encoded as ID.
-
-# Check Numeric
-
-    #Trim text to numeric:
-# int, remove feet and comma
-df['Elevation'] = pd.to_numeric(df['Elevation'].str.replace(',', '').str.replace(' feet', ''),
-                                errors='coerce').astype('Int64')
-# int, remove feet and comma
-df['Highest Point'] = pd.to_numeric(df['Highest Point'].str.replace(',', '').str.replace(
-    ' feet', ''), errors='coerce').astype('Int64')
-#float, remove ' out of 5'
-df['Rating'] = pd.to_numeric(df['Rating'].str.replace(' out of 5', ''), errors='coerce').astype(
-    'Float64')
-
-#Date, remove '\n              '
-df['Date'] = df['Date'].str.strip().str.replace('\n', '').str.strip()
-df['Date'] = pd.to_datetime(df['Date'])
+        new_row = pd.DataFrame({
+            'Column': [col],
+            'Null Count (%)': [null_count_pct],
+            'Outliers (%)': [outliers_pct]
+        }) # just for reference
+        df_num = pd.concat([df_num, new_row], ignore_index=True)
+    # null count isn't too severe, will try imputation and dropping outliers completely
+    return df_num
 
 
-#now check nums
-df_num = pd.DataFrame(columns=['Column', 'Null Count (%)', 'Outliers (%)'])
+def trim_text_clean_numeric(df):
+    '''
 
-for col in num_cols:
-    null_count_pct = df[col].isnull().sum() / len(df) * 100
-    Q1 = df[col].quantile(0.25)
-    Q3 = df[col].quantile(0.75)
-    IQR = Q3 - Q1
-    lower_bound = Q1 - 1.5 * IQR
-    upper_bound = Q3 + 1.5 * IQR
-    outliers_pct = ((df[col] < lower_bound) | (df[col] > upper_bound)).sum() / len(df) * 100
+    :param df: Raw df uncleaned with messy strings
+    :return: data frame with parsed columns
+    '''
+        #Trim text to numeric:
+    # int, remove feet and comma
+    df['Elevation'] = pd.to_numeric(df['Elevation'].str.replace(',', '').str.replace(' feet', ''),
+                                    errors='coerce').astype('Int64')
+    # int, remove feet and comma
+    df['Highest Point'] = pd.to_numeric(df['Highest Point'].str.replace(',', '').str.replace(
+        ' feet', ''), errors='coerce').astype('Int64')
+    #float, remove ' out of 5'
+    df['Rating'] = pd.to_numeric(df['Rating'].str.replace(' out of 5', ''), errors='coerce').astype(
+        'Float64')
 
-    new_row = pd.DataFrame({
-        'Column': [col],
-        'Null Count (%)': [null_count_pct],
-        'Outliers (%)': [outliers_pct]
-    })
-    df_num = pd.concat([df_num, new_row], ignore_index=True)
-# null count isn't too severe, will try imputation and dropping outliers completely
+    #Date, remove '\n              '
+    df['Date'] = df['Date'].str.strip().str.replace('\n', '').str.strip()
+    df['Date'] = pd.to_datetime(df['Date'])
+    return df
 
-############################################
-########### CROSS OVER VISUALS##############
-############################################
-df_viz = df.copy()
-cat_cols = ['Key Features', 'Difficulty', 'Report Text', 'Region', 'Road', 'Bugs', 'Snow',
-            'Type of Hike', 'Trail Conditions']
-id_cols = ['Hike Name', 'Trail Report By']
-num_cols = ['Date', 'Rating', 'Highest Point', 'Elevation']
 
-viz_show = 'No'
-if viz_show != 'No':
+
+def create_cross_viz(df, cat_cols, id_cols, num_cols):
+    '''
+    Just a function for creating initial visualizations for EDA
+    :param df: text parsed dataframe
+    :param cat_cols: set of key categorical variables
+    :param id_cols: set of key id columns
+    :param num_cols: set of key num cols
+    :return: visualizations
+    '''
+    df_viz = df.copy()
     # scatter plot: Rating and Elevation
     plt.figure(figsize=(10, 6))
     sns.scatterplot(data=df_viz, x='Rating', y='Elevation')
@@ -150,11 +152,6 @@ if viz_show != 'No':
     sns.heatmap(corr, annot=True, cmap='coolwarm', linewidths=.5)
     plt.title('Correlation Heatmap of Numerical Columns')
     plt.show() # rating and elevation, along with rate and highest point of course
-
-
-############################################
-########### CATEGORICAL CLEANING ###########
-############################################
 
     df_viz_g = df_viz.groupby('Key Features').size().reset_index(name='count')
 
@@ -235,133 +232,74 @@ if viz_show != 'No':
     plt.show() # not a lot of paterns as to when the data is missing
 
 
-#'Key Features',
-# this one is one of the hardest to clean, I will need to parse it and hope to OHE:
-df_2 = df.copy()
-key_feat_list = list(df_2['Key Features'].unique())
-key_feat_list = [ast.literal_eval(list) for list in key_feat_list] # handle quoted lists
-key_feat_list = [item for sublist in key_feat_list for item in sublist]
+def fix_key_features(df):
+    '''
+    This problematic column needs to be encoded and parsed
+    :param df: unparsed dataframe
+    :return: data frame with new columns
+    '''
+    #'Key Features',
+    # this one is one of the hardest to clean, I will need to parse it and hope to OHE:
+    df_2 = df.copy()
+    key_feat_list = list(df_2['Key Features'].unique())
+    key_feat_list = [ast.literal_eval(list) for list in key_feat_list] # handle quoted lists
+    key_feat_list = [item for sublist in key_feat_list for item in sublist]
 
-unique_items = list(set(key_feat_list)) # perfect, only 19 items
-# then if the specific row entry has this in it, create 0 or 1
-for new_col in unique_items:
-    df_2[f'{new_col}_dummy'] = df_2['Key Features'].apply(lambda x: 1 if new_col in x else 0)
-# this OHE type is preferred over LE, and will provide better performance
-df_2 = df_2.drop('Key Features', axis=1)
+    unique_items = list(set(key_feat_list)) # perfect, only 19 items
+    # then if the specific row entry has this in it, create 0 or 1
+    for new_col in unique_items:
+        df_2[f'{new_col}_dummy'] = df_2['Key Features'].apply(lambda x: 1 if new_col in x else 0)
+    # this OHE type is preferred over LE, and will provide better performance
+    df_2 = df_2.drop('Key Features', axis=1)
 
-# 'Difficulty', Encoding:
-diff_map = {'Easy':0, 'Easy/Moderate':1, 'Moderate':2, 'Moderate/Hard':3, 'Hard':4}
-df_2['Difficulty'] = df_2['Difficulty'].map(diff_map) # this should be the only cleaning, beyond null cleaning
-# needed
+    # 'Difficulty', Encoding:
+    diff_map = {'Easy':0, 'Easy/Moderate':1, 'Moderate':2, 'Moderate/Hard':3, 'Hard':4}
+    df_2['Difficulty'] = df_2['Difficulty'].map(diff_map) # this should be the only cleaning, beyond null cleaning
+    # needed
 
-# 'Report Text',
-# this is the crucial part of the process where I get the signal, using sentiment analysis
-#  will use simple categories to start:
-# we don't want anything without a signal
-df_2 = df_2[~(df_2['Report Text'].isnull())]
-
-from hiking_sentiment_analysis.a3_sentiment_analysis import run_sentiment_check
-print('running sentiment')
-df_2['sentiment'] = df_2['Report Text'].apply(run_sentiment_check)
+    # 'Report Text',
+    # this is the crucial part of the process where I get the signal, using sentiment analysis
+    #  will use simple categories to start:
+    # we don't want anything without a signal
+    df_2 = df_2[~(df_2['Report Text'].isnull())]
+    return df_2
 
 
-# 'Region',
-df_2['Region'].value_counts()
-# The region is made up of two parts, split it with string split, and maybe OHE the first
-#  portion? Then consider Label Encoding the second (too much variety with 60+?) and see later if
-#  the feature is important enough on the second region type (definitely keep the first,
-#  there should be less)
-df_2 = df_2[~(df_2['Region'].isnull())] # due to region not being imputable
+
 def split_region(i):
     if '>' in str(i):
         return str(i).split(' > ')
     else:
         return [str(i), None]
 
-df_2[['large_region', 'small_region']] = df_2['Region'].apply(split_region).apply(pd.Series)
-df_2['large_region'].value_counts()
-df_2['small_region'].value_counts() # too many values for OHE and LE feels wrong, drop for now
-
-df_2 = df_2[[i for i in df_2.columns if i not in ['small_region', 'Region']]]
-
-# 'Trail Conditions']
-#df_2['Trail Conditions'].value_counts()
-# This also has some segments to it. So for items with ':' grab the first portion as a column,
-# and save the second as another column,
-# should be able to OHE new first column, and maybe label encode rest? Depends on variety,
-# may just dro pit?
 def split_condition(i):
     if ':' in str(i):
         return str(i).split(':')
     else:
         return [str(i), None]
 
-df_2[['general_trail_condition', 'detail_trail_condition']] = df_2['Trail Conditions'].apply(
-    split_condition).apply(pd.Series)
-
-print(df_2['general_trail_condition'].value_counts()) # definitely OHE
-print(df_2['detail_trail_condition'].value_counts()) # could take each sub part of the text and
-# OHE it as well! But the general should be good for now, so OHE it and drop rest for now
-df_2 = df_2[[i for i in df_2.columns if i not in ['Report Text', 'Trail Conditions',
-                                                  'detail_trail_condition']]]
-
-# 'Road',#'Bugs', 'Snow', 'Type of Hike',
-#  Typical OHE
-df_2 = pd.get_dummies(df_2, columns=['Road', 'Bugs', 'Snow', 'Type of Hike', 'large_region',
-                                     'general_trail_condition'])
-
-# Check what the count of nulls is now that encoding is done and we can potentially impute:
-cat_nulls = df_2[[i for i in df_2.columns if i not in id_cols+num_cols]].isna().sum()
-# Key Features           0
-# Report Text                                                           201
-# Difficulty                                                           1054
 
 
-#So difficulty is the one with the most nulls, but still less than 5% of the rows are null.
-# I could just drop the null values, but doing something like KNN to help fill the null values
-# may be worth a try. Especially since the elevation, max hieght and other features correlate
-# well with difficulty
-
-#The report text is our signal and has very few nulls, and the region is also a value that
-# contextually doesn't make a lot of sense to impute, and also has very few nulls.
-
-
-#impute after encoding!
-# 'Hike Name' as index??? sentiment analysis and this should run
-
-reviewer_encoder = LabelEncoder()
-df_2['reviewer_id'] = reviewer_encoder.fit_transform(df_2['Trail Report By'])
-df_2['hike_id'] = reviewer_encoder.fit_transform(df_2['Hike Name'])
-df_2 = df_2.drop('Trail Report By', axis=1)
-df_2 = df_2.drop('Hike Name', axis=1)
-df_2.set_index(['hike_id', 'reviewer_id'], inplace=True)
-#TODO: Having index issues, track through process, and finalize a4 and a5! I want both to just be
-# columns!
-##################################
-########Date Features############
-##################################
-df_2['Date'] = pd.to_datetime(df_2['Date'])
-df_2[['Day', 'Month', 'Year']] = df_2['Date'].apply(lambda x: pd.Series([int(x.day), int(x.month),
-                                                                         int(x.year)]))
-df_2 = df_2.drop('Date', axis=1)
+def encode_cate_cols(df_2):
+    reviewer_encoder = LabelEncoder()
+    df_2['reviewer_id'] = reviewer_encoder.fit_transform(df_2['Trail Report By'])
+    df_2['hike_id'] = reviewer_encoder.fit_transform(df_2['Hike Name'])
+    df_2 = df_2.drop('Trail Report By', axis=1)
+    df_2 = df_2.drop('Hike Name', axis=1)
+    df_2.set_index(['hike_id', 'reviewer_id'], inplace=True)
+    #TODO: Having index issues, track through process, and finalize a4 and a5! I want both to just be
+    # columns!
+    ##################################
+    ########Date Features############
+    ##################################
+    df_2['Date'] = pd.to_datetime(df_2['Date'])
+    df_2[['Day', 'Month', 'Year']] = df_2['Date'].apply(lambda x: pd.Series([int(x.day), int(x.month),
+                                                                             int(x.year)]))
+    df_2 = df_2.drop('Date', axis=1)
+    return df_2
 
 
 
-##################################
-######Impute Categorical###########
-##################################
-impute = KNNImputer(n_neighbors=3)
-df_imputed = df_2.copy()
-imputed_values = impute.fit_transform(df_2[['Difficulty']])
-df_imputed['Difficulty'] = imputed_values
-
-
-
-############################################
-########### NUMERIC CLEANING ###########
-############################################
-df_3 = df_imputed.copy()
-num_cols = ['Month', 'Day', 'Year', 'Rating', 'Highest Point', 'Elevation']
 # ['Month', 'Day', 'Year' 'Rating', 'Highest Point', 'Elevation']
 def drop_outliers(df, num_cols, threshold=1.5):
     df_cleaned = df.copy()
@@ -387,94 +325,196 @@ def drop_outliers(df, num_cols, threshold=1.5):
 
     return df_cleaned
 
-#find count of missing values and impute with median
-
-print(df_3[num_cols].isnull().sum())
-df_3[num_cols].fillna(df_3[num_cols].median(), inplace=True)
-
-# Check for duplicates
-print('dupes', df_3.duplicated().sum())
 
 
-# safe to drop?
-df_3.drop_duplicates(inplace=True)
+def impute_and_drop(df_3, num_cols):
+    '''
+    find count of missing values and impute with median
+    :return:
+    '''
+    print(df_3[num_cols].isnull().sum())
+    df_3[num_cols].fillna(df_3[num_cols].median(), inplace=True)
 
-#do outliers:
+    # Check for duplicates
+    print('dupes', df_3.duplicated().sum())
 
-df_3 = drop_outliers(df_3, num_cols) # TODO: Do we maybe not want to drop month outliers?
-#####################################
-###Class Imbalance!##################
-##################################### # TODO: Are there any nans?
-from imblearn.over_sampling import SMOTE
-smote = SMOTE(random_state=22) # I believe the minority class has a reasonable representation,
-# I just want more of them
-df_3.reset_index(inplace=True, drop=False)
-independent_vars = [i for i in df_3.columns if i != 'sentiment']
-df_3 = df_3.astype('float64')
-#df_3[independent_vars] = df_3[independent_vars].apply(pd.to_numeric)
-# bool_cols = df_3.select_dtypes(include='bool').columns
-# df_3[bool_cols] = df_3[bool_cols].astype('Int64')
-
-X = df_3[independent_vars]
-y = df_3[['sentiment']].astype('Int64')
-
-X_res, y_res = smote.fit_resample(X, y)
-df_resampled = pd.DataFrame(X_res, columns=independent_vars)
-#df_resampled['sentiment'] = y_res # wait
-df_resampled.set_index(['hike_id', 'reviewer_id'], inplace=True) # found index!
-y_res.index = df_resampled.index
-######################################
-########Scaling for KNN###############
-######################################
-#Standardization OVER normalization for now
-print('scaling')
-from sklearn.preprocessing import StandardScaler
-
-scaler = StandardScaler()
-standardized_data = scaler.fit_transform(df_resampled)
-df_standardized = pd.DataFrame(standardized_data, columns=df_resampled.columns)
-df_standardized.index = df_resampled.index
-
-##########################################
-##########Dimensionality reduction########
-##########################################
-# I would like to try on two different datasets, one with and one without PCA. ALl other cleaning
-# steps are completely needed (outliers, nulls, feature engineering, encoding, class imbalance,
-# scaling)
-df_final = df_standardized.copy()
-print('PCA')
-pca = PCA().fit(df_final)
-cumulative_explained_variance = np.cumsum(pca.explained_variance_ratio_)
-num_components = np.argmax(cumulative_explained_variance >= 0.90) + 1
-print('90% variance is captured at', num_components)
-
-plt.plot(range(1, len(pca.explained_variance_ratio_) + 1), pca.explained_variance_ratio_.cumsum(), marker='o')
-plt.xlabel('Number of Components')
-plt.ylabel('Cumulative Explained Variance')
-plt.show()
-
-pca = PCA(n_components=num_components)
-df_final_pca = pd.DataFrame(pca.fit_transform(df_final))
-df_final_pca.index = df_final.index
-
-df_final['sentiment'] = y_res['sentiment']
-df_final_pca['sentiment'] = y_res['sentiment']
-
-#TODO: May want to do general feature selection over dimensionality reduction? for another option
-# in model?
-
-# could delete a bunch of DFs if comp becomes a problem
+    # safe to drop?
+    df_3.drop_duplicates(inplace=True)
+    return df_3
 
 
-############################################
-########### DONE, Save out ###########
-############################################
+def balance_classes(df_3):
+    '''
+    Handles class imbalance for model set up
+    :param df_3: previously cleaned df
+    :return: df_resampled: X variables that are aligned with rebalance and y_res which is aligned with rebalance
+    '''
+    from imblearn.over_sampling import SMOTE
+    smote = SMOTE(random_state=22) # I believe the minority class has a reasonable representation,
+    # I just want more of them
+    df_3.reset_index(inplace=True, drop=False)
+    independent_vars = [i for i in df_3.columns if i != 'sentiment']
+    df_3 = df_3.astype('float64')
+    #df_3[independent_vars] = df_3[independent_vars].apply(pd.to_numeric)
+    # bool_cols = df_3.select_dtypes(include='bool').columns
+    # df_3[bool_cols] = df_3[bool_cols].astype('Int64')
+
+    X = df_3[independent_vars]
+    y = df_3[['sentiment']].astype('Int64')
+
+    X_res, y_res = smote.fit_resample(X, y)
+    df_resampled = pd.DataFrame(X_res, columns=independent_vars)
+    #df_resampled['sentiment'] = y_res # wait
+    df_resampled.set_index(['hike_id', 'reviewer_id'], inplace=True) # found index!
+    y_res.index = df_resampled.index
+    return df_resampled, y_res
 
 
-#show alternate pipeline cleaning, as alternative
+def create_pca(df_standardized, y_res):
+    '''
+    Sets up PCA for alternate model test
+    :param df_final:
+    :return: PCA complete df
+    '''
+    df_final = df_standardized.copy()
+    print('PCA')
+    pca = PCA().fit(df_final)
+    cumulative_explained_variance = np.cumsum(pca.explained_variance_ratio_)
+    num_components = np.argmax(cumulative_explained_variance >= 0.90) + 1
+    print('90% variance is captured at', num_components)
 
-df_final.reset_index(inplace=True, drop=False)
-df_final_pca.reset_index(inplace=True, drop=False)
-df_final.to_csv(data_out+'model_data1_no_pca.csv')
-df_final_pca.to_csv(data_out+'model_data1_pca.csv')
-print('Complete')
+    plt.plot(range(1, len(pca.explained_variance_ratio_) + 1), pca.explained_variance_ratio_.cumsum(), marker='o')
+    plt.xlabel('Number of Components')
+    plt.ylabel('Cumulative Explained Variance')
+    plt.show()
+
+    pca = PCA(n_components=num_components)
+    df_final_pca = pd.DataFrame(pca.fit_transform(df_final))
+    df_final_pca.index = df_final.index
+
+    df_final['sentiment'] = y_res['sentiment']
+    df_final_pca['sentiment'] = y_res['sentiment']
+
+    #TODO: May want to do general feature selection over dimensionality reduction? for another option
+    # in model?
+    return df_final_pca, df_final
+
+
+
+
+
+if __name__ == '__main__':
+    print('Start')
+    df_raw = pd.read_csv(data_dir + 'hiking_reports_64.csv')
+    df = df_raw.copy()  # not too big to hold a copy in memory
+
+
+    ########### CROSS OVER VISUALS##############
+    cat_cols = ['Key Features', 'Difficulty', 'Report Text', 'Region', 'Road', 'Bugs', 'Snow',
+                'Type of Hike', 'Trail Conditions']
+    id_cols = ['Hike Name', 'Trail Report By']
+    num_cols = ['Date', 'Rating', 'Highest Point', 'Elevation']
+
+
+    #create_cross_viz(df, cat_cols, id_cols, num_cols) # not used currently
+    df_2 = fix_key_features(df)
+
+    # do sentiment analysis encoding
+    print('running sentiment')
+    df_2['sentiment'] = df_2['Report Text'].apply(run_sentiment_check)
+
+
+    # 'Region' fixes
+    df_2['Region'].value_counts()
+    # The region is made up of two parts, split it with string split, and maybe OHE the first
+    #  portion? Then consider Label Encoding the second (too much variety with 60+?) and see later if
+    #  the feature is important enough on the second region type (definitely keep the first,
+    #  there should be less)
+    df_2 = df_2[~(df_2['Region'].isnull())]  # due to region not being imputable
+    df_2[['large_region', 'small_region']] = df_2['Region'].apply(split_region).apply(pd.Series)
+    df_2['large_region'].value_counts()
+    df_2['small_region'].value_counts()  # too many values for OHE and LE feels wrong, drop for now
+    df_2 = df_2[[i for i in df_2.columns if i not in ['small_region', 'Region']]]
+
+
+    #Parsing and Dummies~
+    df_2[['general_trail_condition', 'detail_trail_condition']] = df_2['Trail Conditions'].apply(
+        split_condition).apply(pd.Series)
+    print(df_2['general_trail_condition'].value_counts())  # definitely OHE
+    print(df_2['detail_trail_condition'].value_counts())  # could take each sub part of the text and
+    # OHE it as well! But the general should be good for now, so OHE it and drop rest for now
+    df_2 = df_2[[i for i in df_2.columns if i not in ['Report Text', 'Trail Conditions',
+                                                      'detail_trail_condition']]]
+    # 'Road',#'Bugs', 'Snow', 'Type of Hike' #  Typical OHE
+    df_2 = pd.get_dummies(df_2, columns=['Road', 'Bugs', 'Snow', 'Type of Hike', 'large_region',
+                                         'general_trail_condition'])
+
+    #leaving this in to show my thought process:
+    # Check what the count of nulls is now that encoding is done and we can potentially impute:
+    cat_nulls = df_2[[i for i in df_2.columns if i not in id_cols + num_cols]].isna().sum()
+    # Key Features           0
+    # Report Text                                                           201
+    # Difficulty                                                           1054
+
+    # So difficulty is the one with the most nulls, but still less than 5% of the rows are null.
+    # I could just drop the null values, but doing something like KNN to help fill the null values
+    # may be worth a try. Especially since the elevation, max hieght and other features correlate
+    # well with difficulty
+
+    # The report text is our signal and has very few nulls, and the region is also a value that
+    # contextually doesn't make a lot of sense to impute, and also has very few nulls.
+
+    # impute after encoding!
+    # 'Hike Name' as index??? sentiment analysis and this should run
+
+    #necessary encoding
+    encode_cate_cols(df_2)
+
+
+    # Impute Categorical
+    impute = KNNImputer(n_neighbors=3)
+    df_imputed = df_2.copy()
+    imputed_values = impute.fit_transform(df_2[['Difficulty']])
+    df_imputed['Difficulty'] = imputed_values
+
+
+    ########### NUMERIC CLEANING ###########
+    df_3 = df_imputed.copy()
+    num_cols = ['Month', 'Day', 'Year', 'Rating', 'Highest Point', 'Elevation']
+
+
+    #impute nuermic cols now, different approach and dupes
+    impute_and_drop(df_3, num_cols)
+
+
+    # do outliers:
+    df_3 = drop_outliers(df_3, num_cols)  # TODO: Do we maybe not want to drop month outliers?
+
+
+    # Class Imbalance!
+    df_resampled, y_res = balance_classes(df_3)
+
+
+    # Scaling for KNN
+    # Standardization OVER normalization for now
+    print('scaling')
+    scaler = StandardScaler()
+    standardized_data = scaler.fit_transform(df_resampled)
+    df_standardized = pd.DataFrame(standardized_data, columns=df_resampled.columns)
+    df_standardized.index = df_resampled.index
+
+
+    # Dimensionality reduction
+    # I would like to try on two different datasets, one with and one without PCA. ALl other cleaning
+    # steps are completely needed (outliers, nulls, feature engineering, encoding, class imbalance,
+    # scaling)
+    df_final_pca, df_final = create_pca(df_standardized, y_res)
+
+
+    ########### DONE, Save out ###########
+    # show alternate pipeline cleaning, as alternative
+    df_final.reset_index(inplace=True, drop=False)
+    df_final_pca.reset_index(inplace=True, drop=False)
+    df_final.to_csv(data_out + 'model_data1_no_pca.csv')
+    df_final_pca.to_csv(data_out + 'model_data1_pca.csv')
+    print('Complete')
