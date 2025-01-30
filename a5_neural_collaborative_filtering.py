@@ -68,12 +68,12 @@ def split_data_and_format(df_model):
     merged_with_info = Concatenate()([merged, hike_info_input])
 
     return X_train, X_test, y_train, y_test, train_ids, test_ids, merged_with_info, user_input,\
-           item_input, hike_info_input
+           item_input, hike_info_input, hike_attributes
 
 
 
 def model_build_and_test(X_train, X_test, y_train, y_test, train_ids, test_ids, merged_with_info,
-                         user_input, item_input, hike_info_input):
+                         user_input, item_input, hike_info_input, hike_attributes):
     #Then get the actual layers of the model
     # Use drop out layers to prevent overfitting, as initial model isn't imrpoving over epochss.
        # Dense layers
@@ -151,10 +151,10 @@ if __name__ == '__main__':
     #df_model['hik_id'] = df_model.reset_index(drop=False, inplace=False)# both should just be
     # columsn
     X_train, X_test, y_train, y_test, train_ids, test_ids, merged_with_info, user_input, \
-    item_input, hike_info_input = split_data_and_format(df_model)
+    item_input, hike_info_input, hike_attributes = split_data_and_format(df_model)
 
     model_ncf, hike_attributes = model_build_and_test(X_train, X_test, y_train, y_test, train_ids,
-                    test_ids, merged_with_info, user_input, item_input, hike_info_input)
+                    test_ids, merged_with_info, user_input, item_input, hike_info_input, hike_attributes)
 
     get_recommendations(test_ids, X_train, y_train, model_ncf, hike_attributes)
 
