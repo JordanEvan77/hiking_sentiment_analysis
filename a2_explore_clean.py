@@ -430,6 +430,8 @@ if __name__ == '__main__':
     print('Start')
     df_raw = pd.read_csv(data_dir + 'hiking_reports_64.csv')
     df = df_raw.copy()  # not too big to hold a copy in memory
+    # don't need to do initial checks anymore, just move to trim
+    df = trim_text_clean_numeric(df)
 
 
     ########### CROSS OVER VISUALS##############
