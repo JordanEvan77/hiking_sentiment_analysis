@@ -35,6 +35,8 @@ Potential Application:
 -Or if you had a travel/tour website, that made money off of ad revenue and recommending excursions, this simple add on could be used to attract users to the platform, by recommending them consistently good hikes. 
 -Knowing the hiking community, people are consistently looking to spend more time out doors, and enjoy the sense of community they get with giving reviews and recieving personal referals, and this could be a further mechanism to encourage that process. Additionally, with the other features I recommended for above for further research, the models accuracy could improve, and depending on the load of users, could be scaled easily, especially with the NN, into a cloud based platform. 
 
+Thanks for looking through my work, let me know if you have questions and find me on LinkedIn: https://www.linkedin.com/in/jordan-gropper-413640155/
+
 
 Learning:
 -I learned a lot from this project, about how to do more complex web scraping and sentiment analysis, to utilizing a new Neural Network. I hope this project demonstrates my ability to problem solve, and overcome unanticipated challenges. As well, it shows an overlap of my passions, data science and the outdoors, as a creative way for me to portray my self starter attitude, and natural curiousity when it comes to coding. 
